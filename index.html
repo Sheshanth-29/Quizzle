@@ -563,22 +563,44 @@ async function revealHostAnswer(qi, q, counts) {
   document.getElementById('timer-arc').style.strokeDashoffset = '188.5';
 }
 
-window.nextQuestion = () => showLeaderboard(false);
+window.nextQuestion = () => {};
 
 async function showLeaderboard(isFinal) {
   const snap    = await gonce(`games/${S.pin}/players`);
   const players = snap.val() || {};
-  const sorted  = Object.entries(players)
-    .map(([id, p]) => ({ id, name:p.name, avatar:p.avatar, score:p.score||0, delta:p.delta||0 }))
+
+  const sorted = Object.entries(players)
+    .map(([id, p]) => ({
+      id,
+      name: p.name,
+      avatar: p.avatar,
+      score: p.score || 0,
+      delta: p.delta || 0
+    }))
     .sort((a,b) => b.score - a.score);
 
-  await gupd(`games/${S.pin}`, { phase: 'leaderboard', leaderboard: sorted });
+  await gupd(`games/${S.pin}`, {
+    phase: 'leaderboard',
+    leaderboard: sorted
+  });
 
-  // Host UI
   renderLeaderboardUI(sorted, isFinal);
   showScreen('leaderboard-screen');
-}
 
+  // AUTO ADVANCE
+  if (!isFinal) {
+    const isLastQuestion = S.currentQ >= S.questions.length - 1;
+
+    setTimeout(() => {
+      if (isLastQuestion) {
+        window.showFinal();
+      } else {
+        S.currentQ++;
+        showHostQuestion(S.currentQ);
+      }
+    }, 5000); // 5 sec leaderboard
+  }
+}
 function renderLeaderboardUI(sorted, isFinal) {
   const list   = document.getElementById('lb-list');
   const medals = ['🥇','🥈','🥉'];
@@ -891,9 +913,429 @@ window.addEventListener('DOMContentLoaded', async () => {
 window.showScreen = showScreen;
 window.startLobby = window.startLobby;
 window.startQuiz  = window.startQuiz;
+
+// ===== QUZZLE SPLASH CONFIG =====
+
+const LETTERS = ['Q','U','I','Z','Z','L','E'];
+const COLORS  = ['#7c3aed','#2563eb','#db2777','#ea580c','#ca8a04','#16a34a','#0e7490'];
+const GLOWS   = ['#a78bfa','#60a5fa','#f472b6','#fb923c','#fbbf24','#4ade80','#22d3ee'];
+const LIGHT   = ['#c4b5fd','#93c5fd','#f9a8d4','#fdba74','#fde68a','#86efac','#67e8f9'];
+
+const NUBS = [
+  [true,true,false,false],
+  [true,true,true,false],
+  [true,true,true,false],
+  [true,true,true,false],
+  [true,true,true,false],
+  [true,true,true,false],
+  [false,false,true,false]
+];
+
+const FLY_FROM = [
+  {x:-280,y:-60,rot:-180},
+  {x:-100,y:-240,rot:120},
+  {x:0,y:-280,rot:-90},
+  {x:100,y:-260,rot:200},
+  {x:220,y:-200,rot:-150},
+  {x:300,y:-80,rot:160},
+  {x:280,y:60,rot:-120}
+];
+
+let raysAlpha = 0;
+let raysAnim = null;
+
+function pPath(W,H,ro,bo,li,ti){
+  const n=10,cx=W/2,cy=H/2;
+
+  let top = ti
+    ? `M0,0 L${cx-n},0 Q${cx-n*.5},-${n} ${cx},${-n*.9} Q${cx+n*.5},-${n} ${cx+n},0 L${W},0`
+    : `M0,0 L${W},0`;
+
+  let right = ro
+    ? `L${W},${cy-n} Q${W+n},${cy-n*.5} ${W+n*.9},${cy} Q${W+n},${cy+n*.5} ${W},${cy+n} L${W},${H}`
+    : `L${W},${H}`;
+
+  let bottom = bo
+    ? `L${cx+n},${H} Q${cx+n*.5},${H+n} ${cx},${H+n*.9} Q${cx-n*.5},${H+n} ${cx-n},${H} L0,${H}`
+    : `L0,${H}`;
+
+  let left = li
+    ? `L0,${cy+n} Q${-n},${cy+n*.5} ${-n*.9},${cy} Q${-n},${cy-n*.5} 0,${cy-n} L0,0`
+    : `L0,0`;
+
+  return top + ' ' + right + ' ' + bottom + ' ' + left + ' Z';
+}
+
+function makeSVG(color, light, nubs, idx){
+  const [ro,bo,li,ti] = nubs;
+  const d = pPath(68,68,ro,bo,li,ti);
+
+  return `
+  <svg class="piece-svg" viewBox="-13 -13 94 94">
+    <defs>
+      <radialGradient id="rg${idx}" cx="35%" cy="30%" r="70%">
+        <stop offset="0%" stop-color="${light}"/>
+        <stop offset="100%" stop-color="${color}"/>
+      </radialGradient>
+    </defs>
+
+    <path d="${d}" fill="url(#rg${idx})"/>
+  </svg>`;
+}
+
+function buildPieces(){
+  const row = document.getElementById('puzzleRow');
+  if(!row) return;
+
+  row.innerHTML='';
+
+  LETTERS.forEach((l,i)=>{
+    const pw=document.createElement('div');
+    pw.className='pw';
+    pw.id='pw'+i;
+
+    pw.innerHTML=makeSVG(
+      COLORS[i],
+      LIGHT[i],
+      NUBS[i],
+      i
+    );
+
+    const span=document.createElement('div');
+    span.className='piece-letter';
+    span.textContent=l;
+
+    pw.appendChild(span);
+    row.appendChild(pw);
+  });
+}
+
+function buildBg(){
+  const bg=document.getElementById('bgPieces');
+  if(!bg) return;
+
+  bg.innerHTML='';
+
+  for(let i=0;i<20;i++){
+    const d=document.createElement('div');
+
+    d.style.position='absolute';
+    d.style.width='30px';
+    d.style.height='30px';
+    d.style.border='1px solid rgba(255,255,255,.05)';
+    d.style.left=Math.random()*100+'%';
+    d.style.top=Math.random()*100+'%';
+    d.style.transform=`rotate(${Math.random()*360}deg)`;
+
+    bg.appendChild(d);
+  }
+}
+
+function drawRays(alpha){
+  const canvas=document.getElementById('rays');
+  if(!canvas) return;
+
+  const ctx=canvas.getContext('2d');
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  const cx=canvas.width/2;
+  const cy=canvas.height/2;
+
+  for(let i=0;i<12;i++){
+
+    const angle=(i*30)*Math.PI/180;
+
+    const len=160;
+
+    ctx.beginPath();
+
+    ctx.moveTo(cx,cy);
+
+    ctx.lineTo(
+      cx+Math.cos(angle)*len,
+      cy+Math.sin(angle)*len
+    );
+
+    ctx.strokeStyle=`rgba(180,140,255,${alpha*.4})`;
+    ctx.lineWidth=2;
+    ctx.stroke();
+  }
+}
+
+function flashRays(){
+
+  if(raysAnim) cancelAnimationFrame(raysAnim);
+
+  raysAlpha=1;
+
+  function fade(){
+
+    raysAlpha-=0.04;
+
+    if(raysAlpha<=0){
+      drawRays(0);
+      return;
+    }
+
+    drawRays(raysAlpha);
+
+    raysAnim=requestAnimationFrame(fade);
+  }
+
+  fade();
+}
+
+function spawnSparkles(x,y,color){
+
+  const splash=document.getElementById('splash');
+  if(!splash) return;
+
+  for(let i=0;i<8;i++){
+
+    const s=document.createElement('div');
+
+    s.className='sparkle';
+
+    s.style.left=x+'px';
+    s.style.top=y+'px';
+
+    s.style.width='4px';
+    s.style.height='4px';
+
+    s.style.background=color;
+
+    splash.appendChild(s);
+
+    const a=Math.random()*Math.PI*2;
+    const d=20+Math.random()*40;
+
+    s.animate([
+      {transform:'translate(0,0)',opacity:1},
+      {transform:`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`,opacity:0}
+    ],{
+      duration:600,
+      easing:'ease-out'
+    }).onfinish=()=>s.remove();
+  }
+}
+
+function getCenter(el){
+
+  const r=el.getBoundingClientRect();
+
+  const pr=document
+      .getElementById('splash')
+      .getBoundingClientRect();
+
+  return {
+    x:r.left-pr.left+r.width/2,
+    y:r.top-pr.top+r.height/2
+  };
+}
+
+function showTagline(){
+
+  const t=document.getElementById('tagline');
+  const t2=document.getElementById('tagline2');
+  const g=document.getElementById('glowLine');
+
+  if(g) g.style.opacity=1;
+  if(t) t.style.opacity=1;
+  if(t2) t2.style.opacity=.55;
+}
+
+function animatePiece(idx,delay){
+
+  const pw=document.getElementById('pw'+idx);
+
+  if(!pw) return;
+
+  const from=FLY_FROM[idx];
+
+  pw.style.opacity=1;
+
+  pw.animate([
+    {
+      transform:`translate(${from.x}px,${from.y}px) rotate(${from.rot}deg) scale(.5)`,
+      opacity:0
+    },
+    {
+      transform:'translate(0,0) rotate(0deg) scale(1)',
+      opacity:1
+    }
+  ],{
+    duration:700,
+    delay,
+    easing:'cubic-bezier(.22,1,.36,1)',
+    fill:'forwards'
+  }).onfinish=()=>{
+
+    const c=getCenter(pw);
+
+    spawnSparkles(
+      c.x,
+      c.y,
+      GLOWS[idx]
+    );
+
+    if(idx===3) flashRays();
+
+    if(idx===LETTERS.length-1){
+      showTagline();
+    }
+  };
+}
+
+function startAnim(){
+  LETTERS.forEach((_,i)=>{
+    animatePiece(i,100+i*130);
+  });
+}
+
+// ===== START SPLASH =====
+
+buildPieces();
+buildBg();
+
+setTimeout(startAnim,400);
+
+setTimeout(()=>{
+
+  const splash=document.getElementById("splash");
+
+  if(splash){
+
+    splash.style.transition="opacity 1s";
+
+    splash.style.opacity="0";
+
+    setTimeout(()=>{
+
+      splash.remove();
+
+      const app=document.getElementById("app");
+
+      if(app){
+        app.style.display="block";
+      }
+
+    },1000);
+  }
+
+},5500);
+
+
 </script>
 
 <style>
+  #app{
+    display:none;
+  }
+
+  #splash{
+  width:100%;max-width:520px;height:420px;
+  background:radial-gradient(ellipse at 50% 55%,#1e0a4a 0%,#0d0620 55%,#060310 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  overflow:hidden;position:relative;border-radius:20px;cursor:pointer;user-select:none;
+}
+
+/* dark puzzle bg texture */
+#bgPieces{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+
+/* light rays from center */
+#rays{
+  position:absolute;inset:0;pointer-events:none;z-index:2;
+  opacity:0;transition:opacity .4s;
+}
+
+#puzzleRow{
+  display:flex;align-items:center;justify-content:center;
+  gap:0;position:relative;z-index:10;margin-bottom:20px;
+}
+
+/* each piece wrapper — sized for interlocking nubs */
+.pw{
+  position:relative;
+  width:68px;height:68px;
+  /* overlap pieces slightly so nubs interlock visually */
+  margin-left:-2px;
+  opacity:0;
+  z-index:10;
+}
+.pw:first-child{margin-left:0;}
+
+.piece-svg{
+  width:68px;height:68px;
+  position:absolute;top:0;left:0;
+}
+.piece-letter{
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-52%);
+  font-family:'Arial Black',Arial,sans-serif;
+  font-size:26px;font-weight:900;color:#fff;
+  text-shadow:0 2px 10px rgba(0,0,0,0.6);
+  pointer-events:none;z-index:2;
+  letter-spacing:0;
+}
+
+#tagline{
+  color:rgba(200,180,255,0.8);
+  font-family:'Arial',sans-serif;
+  font-size:11px;letter-spacing:.32em;
+  text-transform:uppercase;opacity:0;z-index:10;
+  margin-bottom:5px;
+}
+#tagline2{
+  color:rgba(140,110,220,0.55);
+  font-family:'Arial',sans-serif;
+  font-size:9px;letter-spacing:.2em;
+  text-transform:uppercase;opacity:0;z-index:10;
+}
+#glowLine{
+  width:160px;height:2px;
+  background:linear-gradient(90deg,transparent,#8b5cf6,#c084fc,transparent);
+  opacity:0;z-index:10;margin:10px 0 4px;
+}
+
+/* host & join buttons */
+.home-btns{
+  display:flex;flex-direction:column;gap:8px;
+  width:220px;margin-top:18px;
+  opacity:0;z-index:10;
+}
+.btn-host{
+  padding:12px;border-radius:12px;
+  background:linear-gradient(135deg,#7c3aed,#a855f7);
+  border:none;color:#fff;font-size:14px;font-weight:800;
+  cursor:pointer;letter-spacing:.3px;
+  box-shadow:0 4px 16px rgba(124,58,237,.5);
+  font-family:'Arial',sans-serif;
+}
+.btn-join{
+  padding:11px;border-radius:12px;
+  background:rgba(255,255,255,.08);
+  border:1.5px solid rgba(255,255,255,.2);
+  color:rgba(255,255,255,.85);font-size:14px;font-weight:700;
+  cursor:pointer;letter-spacing:.3px;
+  font-family:'Arial',sans-serif;
+}
+
+#replayBtn{
+  position:absolute;bottom:12px;right:16px;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.15);
+  color:rgba(255,255,255,.45);font-size:10px;
+  padding:4px 12px;border-radius:99px;
+  cursor:pointer;z-index:20;font-family:Arial,sans-serif;
+}
+#replayBtn:hover{background:rgba(255,255,255,.13);color:#fff;}
+
+.sparkle{position:absolute;border-radius:50%;pointer-events:none;z-index:15;}
+.streak{position:absolute;pointer-events:none;z-index:4;opacity:0;}
+
+
   :root {
     --bg: #0f0c29; --bg2: #1a1648; --bg3: #241f5e; --card: #2a2570;
     --accent: #7c3aed; --accent2: #a855f7;
@@ -1080,7 +1522,19 @@ window.startQuiz  = window.startQuiz;
   .shape-sq{background:rgba(255,255,255,.3);border-radius:3px;}
 </style>
 </head>
+
 <body>
+
+  <div id="splash">
+  <div id="bgPieces"></div>
+  <canvas id="rays" width="520" height="420"></canvas>
+  <div id="puzzleRow"></div>
+  <div id="glowLine"></div>
+  <div id="tagline">Live Classroom Quiz</div>
+  <div id="tagline2">Up to 300 players · Real-time</div>
+</div>
+
+<div id="app">
 
 <!-- HOME -->
 <div id="home" class="screen active">
@@ -1255,6 +1709,7 @@ window.startQuiz  = window.startQuiz;
 
 <!-- TOAST -->
 <div id="toast"></div>
+</div>
 
 </body>
 </html>
