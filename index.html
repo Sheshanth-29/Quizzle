@@ -28,7 +28,7 @@ const db  = getDatabase(app);
 const AVATARS = ['🦁','🐯','🦊','🐺','🦝','🐻','🐼','🦋','🦄','🐉','🦅','🦜','🐬','🦈','🦕','🤖','👾','🧙','🦸','🎮','🚀','⚡','🌟','🔥','🎯','💎','🎪','🎭'];
 const SHAPES  = ['shape-tri','shape-dia','shape-cir','shape-sq'];
 
-// ── State ───────────────────────────────────────
+// ── State ────────────────────────────────────────
 const S = {
   role: null, pin: null, playerName: null, playerAvatar: null,
   myId: null, myScore: 0,
@@ -103,12 +103,33 @@ function renderOptsGrid() {
   for (let i = 0; i < 4; i++) {
     const wrap = document.createElement('div');
     wrap.className = 'opt-field';
-    wrap.innerHTML = `
-      <div class="opt-color" style="background:${colors[i]}"></div>
-      <input type="text" placeholder="${labels[i]}: Option ${i+1}" value="${tempOpts[i]||''}"
-             oninput="tempOpts[${i}]=this.value">
-      <input type="radio" class="radio-correct" name="correct"
-             ${tempCorrect===i?'checked':''} onchange="tempCorrect=${i}" title="Correct answer">`;
+
+    const colorDot = document.createElement('div');
+    colorDot.className = 'opt-color';
+    colorDot.style.background = colors[i];
+
+    const textInput = document.createElement('input');
+    textInput.type        = 'text';
+    textInput.placeholder = labels[i] + ': Option ' + (i+1);
+    textInput.value       = tempOpts[i] || '';
+    // Use closure to capture i correctly
+    textInput.addEventListener('input', (function(idx) {
+      return function() { tempOpts[idx] = this.value; };
+    })(i));
+
+    const radioInput = document.createElement('input');
+    radioInput.type      = 'radio';
+    radioInput.className = 'radio-correct';
+    radioInput.name      = 'correct';
+    radioInput.title     = 'Correct answer';
+    radioInput.checked   = (tempCorrect === i);
+    radioInput.addEventListener('change', (function(idx) {
+      return function() { if (this.checked) tempCorrect = idx; };
+    })(i));
+
+    wrap.appendChild(colorDot);
+    wrap.appendChild(textInput);
+    wrap.appendChild(radioInput);
     grid.appendChild(wrap);
   }
 }
@@ -208,110 +229,176 @@ function listenToPlayers() {
 }
 
 // ── JOIN FLOW ────────────────────────────────────
+// Guard flag — prevents any double-execution of joinGame
+let _joining = false;
+
 window.joinGame = async () => {
-  const btn = document.getElementById('join-btn');
-
-  if (btn.disabled) return;
-
-  btn.disabled = true;
-  btn.textContent = 'Joining...';
+  // ── GUARD: if already joining, ignore extra taps completely ──
+  if (_joining) return;
+  _joining = true;
 
   const pin  = document.getElementById('join-pin').value.trim();
   const name = document.getElementById('join-name').value.trim();
   const err  = document.getElementById('join-error');
+  const btn  = document.getElementById('join-btn');
 
+  // Validate inputs
   if (pin.length !== 6 || !/^\d+$/.test(pin)) {
-    btn.disabled = false;
-    btn.textContent = 'Join Game →';
-
-    err.textContent='Enter a valid 6-digit PIN';
-    err.style.display='block';
-    return;
-}
-
-if (!name) {
-    btn.disabled = false;
-    btn.textContent = 'Join Game →';
-
-    err.textContent='Enter your nickname';
-    err.style.display='block';
-    return;
-}
+    err.textContent = 'Enter a valid 6-digit PIN';
+    err.style.display = 'block';
+    _joining = false; return;
+  }
+  if (!name) {
+    err.textContent = 'Enter your nickname';
+    err.style.display = 'block';
+    _joining = false; return;
+  }
   err.style.display = 'none';
 
-  // Check game exists
-  const snap = await gonce(`games/${pin}`);
-  if (!snap.exists()) {
-    btn.disabled = false;
-    btn.textContent = 'Join Game →';
+  // Disable button visually
+  btn.disabled = true;
+  btn.textContent = 'Joining…';
 
-    err.textContent='No game found with that PIN. Ask the host to launch first.';
-    err.style.display='block';
-    return;
-}
-  const players = game.players || {};
+  try {
+    // Check game exists in Firebase
+    const snap = await gonce(`games/${pin}`);
+    if (!snap.exists()) {
+      err.textContent = 'No game found with that PIN. Ask the host to launch first.';
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Join Game →';
+      _joining = false; return;
+    }
 
-const existingPlayer = Object.entries(players).find(
-    ([id, p]) => p.name.toLowerCase() === name.toLowerCase()
-);
+    const game = snap.val();
+    if (game.phase === 'final') {
+      err.textContent = 'This game has already ended.';
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Join Game →';
+      _joining = false; return;
+    }
 
-if (existingPlayer) {
-    S.role = 'player';
-    S.pin = pin;
-    S.playerName = existingPlayer[1].name;
-    S.playerAvatar = existingPlayer[1].avatar;
-    S.myId = existingPlayer[0]; // reuse old player ID
-    S.myScore = existingPlayer[1].score || 0;
-    S.questions = game.questions || [];
+    // ── CHECK FOR EXISTING PLAYER WITH SAME NAME (reconnect) ──
+    const players = game.players || {};
+    const existing = Object.entries(players).find(
+      ([id, p]) => p.name.toLowerCase() === name.toLowerCase()
+    );
 
-    document.getElementById('pw-name').textContent = S.playerName;
+    if (existing) {
+      // ── RECONNECT: reuse exact same player slot, score, avatar ──
+      const [existingId, existingData] = existing;
+      S.role         = 'player';
+      S.pin          = pin;
+      S.playerName   = existingData.name;
+      S.playerAvatar = existingData.avatar;
+      S.myId         = existingId;
+      S.myScore      = existingData.score || 0;
+      S.questions    = game.questions || [];
+      S.answered     = existingData.answeredThisRound || false;
+
+      // Save session to sessionStorage so page refresh auto-reconnects
+      sessionStorage.setItem('qb_session', JSON.stringify({
+        pin, myId: existingId, name: existingData.name,
+        avatar: existingData.avatar, score: existingData.score || 0
+      }));
+
+      showToast('Welcome back ' + S.playerName + '! 👋');
+
+    } else {
+      // ── NEW PLAYER: create fresh slot ──
+      S.role         = 'player';
+      S.pin          = pin;
+      S.playerName   = name;
+      S.playerAvatar = AVATARS[Math.floor(Math.random() * AVATARS.length)];
+      S.myId         = 'player_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+      S.myScore      = 0;
+      S.questions    = game.questions || [];
+      S.answered     = false;
+
+      await gset(`games/${pin}/players/${S.myId}`, {
+        name: S.playerName, avatar: S.playerAvatar,
+        score: 0, joinedAt: Date.now(), answeredThisRound: false
+      });
+
+      // Save session to sessionStorage
+      sessionStorage.setItem('qb_session', JSON.stringify({
+        pin, myId: S.myId, name: S.playerName,
+        avatar: S.playerAvatar, score: 0
+      }));
+    }
+
+    document.getElementById('pw-name').textContent   = S.playerName;
     document.getElementById('pw-avatar').textContent = S.playerAvatar;
-    document.getElementById('pw-pin').textContent = S.pin;
+    document.getElementById('pw-pin').textContent    = S.pin;
 
-    showScreen('player-wait');
+    // ── RESUME: jump to the correct screen based on current game phase ──
+    if (game.phase === 'lobby') {
+      showScreen('player-wait');
+    } else if (game.phase === 'question') {
+      // If already answered this question, show waiting state
+      if (S.answered) {
+        showScreen('player-wait');
+        document.querySelector('#player-wait div:last-child').textContent =
+          'Waiting for others to finish…';
+      } else {
+        const q = game.questions[game.currentQ];
+        showPlayerQuestion(q, game.currentQ, game.questions.length);
+      }
+    } else if (game.phase === 'reveal') {
+      const q = game.questions[game.currentQ];
+      showPlayerQuestion(q, game.currentQ, game.questions.length);
+      // Small delay then reveal correct answer
+      setTimeout(() => revealPlayerAnswer(game.correctIdx), 300);
+    } else if (game.phase === 'leaderboard') {
+      showLeaderboardForPlayer(game.leaderboard || [], game.currentQ, game.questions.length);
+    } else if (game.phase === 'final') {
+      showFinalScreen(game.leaderboard || []);
+    }
+
     listenGamePhase();
 
-    return;
-}
-  S.role         = 'player';
-  S.pin          = pin;
-  S.playerName   = name;
-  S.playerAvatar = AVATARS[Math.floor(Math.random()*AVATARS.length)];
-  S.myId         = 'player_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
-  S.myScore      = 0;
-  S.questions    = game.questions || [];
-
-  // Register player
-  await gset(`games/${pin}/players/${S.myId}`, {
-    name: S.playerName, avatar: S.playerAvatar, score: 0, joinedAt: Date.now()
-  });
-
-  document.getElementById('pw-name').textContent   = S.playerName;
-  document.getElementById('pw-avatar').textContent = S.playerAvatar;
-  document.getElementById('pw-pin').textContent    = S.pin;
-  showScreen('player-wait');
-
-  // Listen for game phase changes
-  listenGamePhase();
+  } catch (e) {
+    console.error('JOIN ERROR:', e);
+    err.textContent = 'Something went wrong: ' + e.message;
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Join Game →';
+  } finally {
+    // Always release the join lock after everything is done
+    _joining = false;
+  }
 };
 
 function listenGamePhase() {
+  // Track last seen event key so same phase+question never fires twice
+  let lastEventKey = null;
+
   glisten(`games/${S.pin}`, snap => {
     if (!snap.exists()) return;
-    const game = snap.val();
+    const game  = snap.val();
+    const phase = game.phase;
+    const qi    = game.currentQ ?? 0;
 
-    if (game.phase === 'question') {
-    const q = game.questions[game.currentQ];
-    showPlayerQuestion(q, game.currentQ, game.questions.length);
-}
-    if (game.phase === 'reveal') {
+    // Unique key per phase+question — ignore duplicate Firebase fires
+    const eventKey = phase + '_' + qi;
+    if (eventKey === lastEventKey) return;
+    lastEventKey = eventKey;
+
+    if (phase === 'question') {
+      // Reset answered for every new question — this was the main bug
+      S.answered = false;
+      S.currentQ = qi;
+      const q = game.questions[qi];
+      showPlayerQuestion(q, qi, game.questions.length);
+    }
+
+    if (phase === 'reveal') {
       revealPlayerAnswer(game.correctIdx);
     }
-    if (game.phase === 'leaderboard') {
-      const scores = game.leaderboard || [];
-      showLeaderboardForPlayer(scores, game.currentQ, game.questions.length);
+
+    if (phase === 'leaderboard') {
+      showLeaderboardForPlayer(game.leaderboard || [], qi, game.questions.length);
     }
-    if (game.phase === 'final') {
+
+    if (phase === 'final') {
       showFinalScreen(game.leaderboard || []);
     }
   });
@@ -552,6 +639,16 @@ async function submitAnswer(answerIdx, totalTime) {
   clearInterval(S.timerInterval);
   disablePlayerOpts(answerIdx);
 
+  // Mark answered in Firebase so reconnect knows
+  await gupd(`games/${S.pin}/players/${S.myId}`, { answeredThisRound: true });
+
+  // Update sessionStorage score too
+  const saved = sessionStorage.getItem('qb_session');
+  if (saved) {
+    const session = JSON.parse(saved);
+    sessionStorage.setItem('qb_session', JSON.stringify({ ...session, score: S.myScore }));
+  }
+
   await gset(`games/${S.pin}/answers/${S.currentQ}/${S.myId}`, {
     answerIdx, timeLeft: S.timerLeft,
     timestamp: Date.now(), playerId: S.myId,
@@ -661,7 +758,7 @@ function showFinalScreen(sorted) {
 window.resetGame = async () => {
   stopListeners();
   clearInterval(S.timerInterval);
-  // Clean up Firebase game
+  sessionStorage.removeItem('qb_session');
   if (S.pin && S.role === 'host') {
     await remove(gref(`games/${S.pin}`));
   }
@@ -698,9 +795,68 @@ function runConfetti() {
 }
 
 // ── URL PIN prefill ──────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   const pin = new URLSearchParams(window.location.search).get('pin');
   if (pin) { document.getElementById('join-pin').value = pin; showScreen('join-screen'); }
+
+  // ── AUTO-RECONNECT on page refresh ──
+  const saved = sessionStorage.getItem('qb_session');
+  if (saved) {
+    try {
+      const session = JSON.parse(saved);
+      const snap = await gonce(`games/${session.pin}`);
+      if (snap.exists()) {
+        const game = snap.val();
+        // Only auto-reconnect if game is still active
+        if (game.phase !== 'final') {
+          const playerSnap = await gonce(`games/${session.pin}/players/${session.myId}`);
+          if (playerSnap.exists()) {
+            // Restore state silently
+            S.role         = 'player';
+            S.pin          = session.pin;
+            S.playerName   = session.name;
+            S.playerAvatar = session.avatar;
+            S.myId         = session.myId;
+            S.myScore      = playerSnap.val().score || 0;
+            S.questions    = game.questions || [];
+            S.answered     = playerSnap.val().answeredThisRound || false;
+
+            document.getElementById('pw-name').textContent   = S.playerName;
+            document.getElementById('pw-avatar').textContent = S.playerAvatar;
+            document.getElementById('pw-pin').textContent    = S.pin;
+
+            showToast('Auto-reconnected ✓');
+
+            // Jump to correct screen
+            if (game.phase === 'lobby') {
+              showScreen('player-wait');
+            } else if (game.phase === 'question') {
+              if (S.answered) {
+                showScreen('player-wait');
+              } else {
+                const q = game.questions[game.currentQ];
+                showPlayerQuestion(q, game.currentQ, game.questions.length);
+              }
+            } else if (game.phase === 'reveal') {
+              const q = game.questions[game.currentQ];
+              showPlayerQuestion(q, game.currentQ, game.questions.length);
+              setTimeout(() => revealPlayerAnswer(game.correctIdx), 300);
+            } else if (game.phase === 'leaderboard') {
+              showLeaderboardForPlayer(game.leaderboard || [], game.currentQ, game.questions.length);
+            }
+
+            listenGamePhase();
+            return; // skip normal home screen
+          }
+        }
+      }
+      // Game ended or player gone — clear stale session
+      sessionStorage.removeItem('qb_session');
+    } catch (e) {
+      sessionStorage.removeItem('qb_session');
+    }
+  }
+
   document.getElementById('join-pin').addEventListener('keyup',  e => { if(e.key==='Enter') document.getElementById('join-name').focus(); });
   document.getElementById('join-name').addEventListener('keyup', e => { if(e.key==='Enter') window.joinGame(); });
 });
