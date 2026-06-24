@@ -558,6 +558,9 @@ async function revealHostAnswer(qi, q, counts) {
 
   const isLast = qi >= S.questions.length - 1;
   document.getElementById(isLast ? 'hq-results-btn' : 'hq-next-btn').style.display = 'block';
+  clearInterval(S.timerInterval);
+  document.getElementById('hq-timer').textContent = '✓';
+  document.getElementById('timer-arc').style.strokeDashoffset = '188.5';
 }
 
 window.nextQuestion = () => showLeaderboard(false);
@@ -680,8 +683,18 @@ function revealPlayerAnswer(correctIdx) {
   document.getElementById('pq-timer').textContent = '0';
   document.querySelectorAll('.pq-opt').forEach((btn, i) => {
     btn.disabled = true;
-    if (i === correctIdx) btn.classList.add('answered-correct');
-    else btn.classList.add('answered-wrong');
+    if (i === correctIdx) {
+      btn.classList.add('answered-correct');
+      // Add tick mark to correct answer always
+      if (!btn.querySelector('.correct-tick')) {
+        const tick = document.createElement('span');
+        tick.className = 'correct-tick';
+        tick.textContent = ' ✓';
+        btn.appendChild(tick);
+      }
+    } else {
+      btn.classList.add('answered-wrong');
+    }
   });
 }
 
@@ -890,6 +903,19 @@ window.startQuiz  = window.startQuiz;
     --border: rgba(124,58,237,0.3);
     --radius: 12px; --radius-lg: 18px;
   }
+  .correct-tick {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 12px rgba(255,255,255,0.9),
+               0 0 24px rgba(16,185,129,0.8);
+  animation: tickPop .3s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes tickPop {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
   .screen { display: none; min-height: 100vh; }
