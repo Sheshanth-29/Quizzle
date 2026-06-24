@@ -318,6 +318,7 @@ window.joinGame = async () => {
         name: S.playerName, avatar: S.playerAvatar,
         score: 0, joinedAt: Date.now(), answeredThisRound: false
       });
+      await remove(gref(`games/${pin}/results/${S.myId}`));
 
       // Save session to sessionStorage
       sessionStorage.setItem('qb_session', JSON.stringify({
@@ -407,6 +408,8 @@ function listenGamePhase() {
   glisten(`games/${S.pin}/results/${S.myId}`, snap => {
     if (!snap.exists()) return;
     const res = snap.val();
+    if (!res || res.playerId !== S.myId) return;
+    if (res.qIndex !== undefined && res.qIndex !== S.currentQ) return;
     S.myScore = res.score;
     document.getElementById('pq-score').textContent = S.myScore;
     const fb = document.getElementById('pq-feedback');
@@ -538,7 +541,7 @@ async function revealHostAnswer(qi, q, counts) {
     const prev = players[pid]?.score || 0;
     updates[`games/${S.pin}/players/${pid}/score`] = prev + pts;
     updates[`games/${S.pin}/players/${pid}/delta`] = pts;
-    updates[`games/${S.pin}/results/${pid}`] = { correct: isCorrect, pts, score: prev + pts };
+    updates[`games/${S.pin}/results/${pid}`] = { correct: isCorrect, pts, score: prev + pts, playerId: pid, qIndex: qi };
   });
   await update(ref(db), updates);
 
