@@ -936,6 +936,10 @@ const LETTERS = ['Q','U','I','Z','Z','L','E'];
 const COLORS  = ['#7c3aed','#2563eb','#db2777','#ea580c','#ca8a04','#16a34a','#0e7490'];
 const GLOWS   = ['#a78bfa','#60a5fa','#f472b6','#fb923c','#fbbf24','#4ade80','#22d3ee'];
 const LIGHT   = ['#c4b5fd','#93c5fd','#f9a8d4','#fdba74','#fde68a','#86efac','#67e8f9'];
+// DELETE nothing, just ADD these 3 lines after LIGHT:
+const isMobile = window.innerWidth < 600;
+const PIECE_SIZE = isMobile ? 42 : 68;
+const NUB_SIZE   = isMobile ? 7  : 10;
 
 const NUBS = [
   [true,true,false,false],
@@ -946,22 +950,23 @@ const NUBS = [
   [true,true,true,false],
   [false,false,true,false]
 ];
-
+const vw = window.innerWidth;
+const vh = window.innerHeight;
 const FLY_FROM = [
-  {x:-280,y:-60,rot:-180},
-  {x:-100,y:-240,rot:120},
-  {x:0,y:-280,rot:-90},
-  {x:100,y:-260,rot:200},
-  {x:220,y:-200,rot:-150},
-  {x:300,y:-80,rot:160},
-  {x:280,y:60,rot:-120}
+  {x:-vw*0.70, y:-vh*0.15, rot:-180},
+  {x:-vw*0.25, y:-vh*0.35, rot:120},
+  {x:0,        y:-vh*0.40, rot:-90},
+  {x:vw*0.25,  y:-vh*0.35, rot:200},
+  {x:vw*0.55,  y:-vh*0.28, rot:-150},
+  {x:vw*0.70,  y:-vh*0.12, rot:160},
+  {x:vw*0.65,  y:vh*0.10,  rot:-120}
 ];
 
 let raysAlpha = 0;
 let raysAnim = null;
 
 function pPath(W,H,ro,bo,li,ti){
-  const n=10,cx=W/2,cy=H/2;
+  const n=NUB_SIZE,cx=W/2,cy=H/2;
 
   let top = ti
     ? `M0,0 L${cx-n},0 Q${cx-n*.5},-${n} ${cx},${-n*.9} Q${cx+n*.5},-${n} ${cx+n},0 L${W},0`
@@ -984,10 +989,10 @@ function pPath(W,H,ro,bo,li,ti){
 
 function makeSVG(color, light, nubs, idx){
   const [ro,bo,li,ti] = nubs;
-  const d = pPath(68,68,ro,bo,li,ti);
+  const d = pPath(PIECE_SIZE, PIECE_SIZE, ro, bo, li, ti);
 
   return `
-  <svg class="piece-svg" viewBox="-13 -13 94 94">
+  <svg class="piece-svg" viewBox="-13 -13 94 94" style="width:${PIECE_SIZE}px;height:${PIECE_SIZE}px">
     <defs>
       <radialGradient id="rg${idx}" cx="35%" cy="30%" r="70%">
         <stop offset="0%" stop-color="${light}"/>
@@ -1263,6 +1268,17 @@ if (_urlPin) {
   justify-content:center;
   overflow:hidden;
   z-index:99999;
+
+  @media (max-width: 600px) {
+  #splash-logo {
+    gap: 2px !important;
+  }
+  .piece-svg {
+    width: 42px !important;
+    height: 42px !important;
+  }
+}
+
 }
 
 /* dark puzzle bg texture */
