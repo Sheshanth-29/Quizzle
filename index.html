@@ -231,6 +231,7 @@ function listenToPlayers() {
 // ── JOIN FLOW ────────────────────────────────────
 // Guard flag — prevents any double-execution of joinGame
 let _joining = false;
+let _leaderboardShown = false; // ADD HERE
 
 window.joinGame = async () => {
   // ── GUARD: if already joining, ignore extra taps completely ──
@@ -438,6 +439,7 @@ window.startQuiz = async () => {
 };
 
 async function showHostQuestion(qi) {
+  _leaderboardShown = false; 
   S.answered      = false;
   S.answerOrder   = 0;
   const q         = S.questions[qi];
@@ -574,6 +576,10 @@ setTimeout(() => {
 window.nextQuestion = () => {};
 
 async function showLeaderboard(isFinal) {
+  // GUARD: prevent double-trigger on reconnect
+  if (_leaderboardShown) return;
+  _leaderboardShown = true;
+
   const snap    = await gonce(`games/${S.pin}/players`);
   const players = snap.val() || {};
 
@@ -600,13 +606,16 @@ async function showLeaderboard(isFinal) {
     const isLastQuestion = S.currentQ >= S.questions.length - 1;
 
     setTimeout(() => {
+      _leaderboardShown = false; // reset for next question
       if (isLastQuestion) {
         window.showFinal();
       } else {
         S.currentQ++;
         showHostQuestion(S.currentQ);
       }
-    }, 5000); // 5 sec leaderboard
+    }, 5000);
+  } else {
+    _leaderboardShown = false; // reset on final too
   }
 }
 function renderLeaderboardUI(sorted, isFinal) {
@@ -812,6 +821,7 @@ function showFinalScreen(sorted) {
 }
 
 window.resetGame = async () => {
+  _leaderboardShown = false; 
   stopListeners();
   clearInterval(S.timerInterval);
   sessionStorage.removeItem('qb_session');
@@ -1304,7 +1314,7 @@ if (_urlPin) {
 }
 
 #tagline{
-  color:rgba(200,180,255,0.8);
+  color:navy;
   font-family:'Arial',sans-serif;
   font-size:11px;letter-spacing:.32em;
   text-transform:uppercase;opacity:0;z-index:10;
@@ -1394,7 +1404,7 @@ if (_urlPin) {
   #home { align-items:center; justify-content:center; padding:2rem; background:url(bg1.jpg); }
   .logo { font-size:clamp(2.5rem,6vw,4rem); font-weight:800; letter-spacing:-1px; margin-bottom:.25rem; }
   .logo span { color:var(--accent2); }
-  .tagline { color:var(--muted); font-size:1.1rem; margin-bottom:3rem; }
+  .tagline { color:navy; font-size:1.1rem; margin-bottom:3rem; }
   .home-btns { display:flex; flex-direction:column; gap:1rem; width:100%; max-width:360px; }
   .btn-host { padding:1.1rem 2rem; border-radius:var(--radius); font-size:1.1rem; font-weight:700; border:none; cursor:pointer; transition:transform .12s,box-shadow .12s; background:teal; color:#fff; }
   .btn-host:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(124,58,237,.5); }
@@ -1655,7 +1665,7 @@ if (_urlPin) {
 <!-- HOME -->
 <div id="home" class="screen active">
   <div class="logo">Quiz<span>zle</span> ⚡</div>
-  <div class="tagline">Live classroom quizzes — no lag, no limits</div>
+  <div class="tagline">Live classroom quizzes - Enjoy the leisure time</div>
   <div class="home-btns">
     <button class="btn-host" onclick="showScreen('host-setup')">🎯 Host a Quiz</button>
     <button class="btn-join" onclick="showScreen('join-screen')">🎮 Join a Game</button>
