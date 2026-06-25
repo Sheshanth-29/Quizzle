@@ -664,22 +664,7 @@ async function showLeaderboard(isFinal) {
   showScreen('leaderboard-screen');
 
   // AUTO ADVANCE
-  if (!isFinal) {
-    const isLastQuestion = S.currentQ >= S.questions.length - 1;
-
-    setTimeout(async () => {
-  // ── Write leaderboard phase FIRST, wait for Firebase to confirm ──
-  await gupd(`games/${S.pin}`, { phase: 'leaderboard' });
-  
-  // ── Then wait 4 seconds for players to see leaderboard ──
-  setTimeout(async () => {
-    S.currentQ++;
-    await showHostQuestion(S.currentQ);
-  }, 4000);
-}, 500); // small buffer after reveal
-  } else {
-    _leaderboardShown = false; // reset on final too
-  }
+  _leaderboardShown = false;
 }
 function renderLeaderboardUI(sorted, isFinal) {
   const list   = document.getElementById('lb-list');
