@@ -853,8 +853,6 @@ function runConfetti() {
 // ── URL PIN prefill ──────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
   const pin = new URLSearchParams(window.location.search).get('pin');
-  if (pin) { document.getElementById('join-pin').value = pin; showScreen('join-screen'); }
-
   // ── AUTO-RECONNECT on page refresh ──
   const saved = sessionStorage.getItem('qb_session');
   if (saved) {
@@ -1207,27 +1205,36 @@ buildPieces();
 buildBg();
 
 setTimeout(startAnim,400);
+const _urlPin = new URLSearchParams(window.location.search).get('pin');
 
-setTimeout(()=>{
-
-  const splash=document.getElementById("splash");
-
-  if(splash){
-
-    splash.style.transition="opacity 1s";
-
-    splash.style.opacity="0";
-
-    setTimeout(()=>{
-
-     splash.remove();
-
-showScreen('home');
-
-    },1000);
-  }
-
-},5500);
+if (_urlPin) {
+  // Play splash fully, then skip home → go straight to join screen
+  setTimeout(() => {
+    const splash = document.getElementById("splash");
+    if (splash) {
+      splash.style.transition = "opacity 1s";
+      splash.style.opacity = "0";
+      setTimeout(() => {
+        splash.remove();
+        document.getElementById('join-pin').value = _urlPin;
+        showScreen('join-screen');
+      }, 1000);
+    }
+  }, 5500);
+} else {
+  // Normal flow — splash then home
+  setTimeout(() => {
+    const splash = document.getElementById("splash");
+    if (splash) {
+      splash.style.transition = "opacity 1s";
+      splash.style.opacity = "0";
+      setTimeout(() => {
+        splash.remove();
+        showScreen('home');
+      }, 1000);
+    }
+  }, 5500);
+}
 
 
 </script>
