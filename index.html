@@ -620,13 +620,7 @@ async function revealHostAnswer(qi, q, counts) {
   setTimeout(async () => {
     await showLeaderboard(isLast);
 
-    if (isLast) {
-      // Final question → wait 5s on leaderboard → go to trophy screen
-      setTimeout(() => {
-        window.showFinal();
-      }, 5000);
-    } else {
-      // Not last → wait 4s on leaderboard → load next question
+    if (!isLast) {
       setTimeout(() => {
         S.currentQ++;
         showHostQuestion(S.currentQ);
