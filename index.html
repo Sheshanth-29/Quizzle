@@ -172,6 +172,11 @@
       box-shadow: none !important;
     }
 
+    select option {
+      background-color: #0b132b !important;
+      color: white !important;
+    }
+
     input, select {
       font-family: var(--font-family);
       background: rgba(255, 255, 255, 0.05);
@@ -849,7 +854,7 @@
       font-size: 1.15rem;
       font-weight: 700;
       color: white;
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--bg-panel);
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
       outline: none;
       transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -859,7 +864,7 @@
 
     @media (hover: hover) {
       .player-btn-option:hover:not(:disabled) {
-        background: rgba(255, 255, 255, 0.1);
+        background: var(--bg-panel-hover);
         border-color: var(--color-accent);
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(0, 240, 255, 0.15);
@@ -1318,15 +1323,8 @@
           <input type="text" id="input-setup-title" placeholder="Enter Quiz Title" value="My Awesome Quiz" required>
         </div>
         <div>
-          <label for="select-setup-timer" style="display:block; margin-bottom:0.5rem; font-weight:600;">Default Timer</label>
-          <select id="select-setup-timer">
-            <option value="5">5s</option>
-            <option value="10">10s</option>
-            <option value="15">15s</option>
-            <option value="20" selected>20s</option>
-            <option value="30">30s</option>
-            <option value="60">60s</option>
-          </select>
+          <label for="input-setup-timer" style="display:block; margin-bottom:0.5rem; font-weight:600;">Default Timer (seconds)</label>
+          <input type="number" id="input-setup-timer" min="3" max="360" value="20" placeholder="e.g. 20" required>
         </div>
       </div>
 
@@ -1903,7 +1901,7 @@
 
     function saveQuizDraft() {
       const titleInput = document.getElementById("input-setup-title");
-      const timerSelect = document.getElementById("select-setup-timer");
+      const timerSelect = document.getElementById("input-setup-timer");
       if (!titleInput || !timerSelect) return;
       
       const draft = {
@@ -1961,7 +1959,7 @@
             throw new Error("Invalid draft format");
           }
           document.getElementById("input-setup-title").value = draft.title || "My Awesome Quiz";
-          document.getElementById("select-setup-timer").value = draft.defaultTimer || 20;
+          document.getElementById("input-setup-timer").value = draft.defaultTimer || 20;
           currentQuestions = draft.questions || [];
           renderQuestionEditor();
           showToast("Draft restored successfully!", "success");
@@ -1982,7 +1980,7 @@
     });
 
     document.getElementById("input-setup-title").addEventListener("input", saveQuizDraftDebounced);
-    document.getElementById("select-setup-timer").addEventListener("change", saveQuizDraftDebounced);
+    document.getElementById("input-setup-timer").addEventListener("input", saveQuizDraftDebounced);
 
     // ----------------------------------
     // HOME SCREEN EVENTS
@@ -1990,7 +1988,7 @@
     document.getElementById("btn-home-host").addEventListener("click", () => {
       currentQuestions = [];
       document.getElementById("input-setup-title").value = "My Awesome Quiz";
-      document.getElementById("select-setup-timer").value = "20";
+      document.getElementById("input-setup-timer").value = "20";
       checkDraftOnOpen();
       renderQuestionEditor();
       showScreen("screen-host-setup");
@@ -2019,7 +2017,7 @@
     });
 
     document.getElementById("btn-setup-add").addEventListener("click", () => {
-      const defTime = parseInt(document.getElementById("select-setup-timer").value) || 20;
+      const defTime = parseInt(document.getElementById("input-setup-timer").value) || 20;
       currentQuestions.push({
         question: "",
         options: ["", "", "", ""],
@@ -2058,14 +2056,7 @@
           </div>
           <div class="question-inputs-grid">
             <input type="text" class="question-text-input" data-idx="${qIndex}" value="${escapeHtml(q.question)}" placeholder="Enter your question here..." required>
-            <select class="question-time-select" data-idx="${qIndex}">
-              <option value="5" ${q.timeLimit === 5 ? 'selected' : ''}>5s</option>
-              <option value="10" ${q.timeLimit === 10 ? 'selected' : ''}>10s</option>
-              <option value="15" ${q.timeLimit === 15 ? 'selected' : ''}>15s</option>
-              <option value="20" ${q.timeLimit === 20 ? 'selected' : ''}>20s</option>
-              <option value="30" ${q.timeLimit === 30 ? 'selected' : ''}>30s</option>
-              <option value="60" ${q.timeLimit === 60 ? 'selected' : ''}>60s</option>
-            </select>
+            <input type="number" class="question-time-input" data-idx="${qIndex}" min="3" max="360" value="${q.timeLimit}" placeholder="Time (s)" required>
           </div>
           <div class="options-inputs-grid">
             <div class="option-input-wrapper wrapper-a">
@@ -2111,10 +2102,10 @@
         });
       });
 
-      container.querySelectorAll(".question-time-select").forEach(select => {
-        select.addEventListener("change", (e) => {
+      container.querySelectorAll(".question-time-input").forEach(input => {
+        input.addEventListener("input", (e) => {
           const idx = parseInt(e.target.getAttribute("data-idx"));
-          currentQuestions[idx].timeLimit = parseInt(e.target.value);
+          currentQuestions[idx].timeLimit = parseInt(e.target.value) || 20;
           saveQuizDraftDebounced();
         });
       });
@@ -3029,4 +3020,3 @@
   </script>
 </body>
 </html>
-  
