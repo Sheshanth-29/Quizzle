@@ -368,29 +368,38 @@ window.joinGame = async () => {
     _joining = false;
   }
 };
-
 function listenGamePhase() {
   // Track last seen event key so same phase+question never fires twice
   let lastEventKey = null;
+  let lastLeaderboardKey = null;
 
-  glisten(`games/${S.pin}`, snap => {
+  glisten(`games/${S.pin}`, async snap => {
     if (!snap.exists()) return;
-    const game  = snap.val();
-    const phase = game.phase;
-    const qi    = game.currentQ ?? 0;
 
-    // Unique key per phase+question — ignore duplicate Firebase fires
+    const game = snap.val();
+    const phase = game.phase;
+    const qi = game.currentQ ?? 0;
+
+    // Prevent duplicate Firebase triggers
     const eventKey = phase + '_' + qi;
+
     if (eventKey === lastEventKey) return;
     lastEventKey = eventKey;
 
     if (phase === 'question') {
-      // Reset answered for every new question — this was the main bug
       S.answered = false;
       S.currentQ = qi;
-      window._questionStartedAt = game.questionStartedAt || null;
+
+      window._questionStartedAt =
+        game.questionStartedAt || null;
+
       const q = game.questions[qi];
-      showPlayerQuestion(q, qi, game.questions.length);
+
+      showPlayerQuestion(
+        q,
+        qi,
+        game.questions.length
+      );
     }
 
     if (phase === 'reveal') {
@@ -398,32 +407,57 @@ function listenGamePhase() {
     }
 
     if (phase === 'leaderboard') {
-      showLeaderboardForPlayer(game.leaderboard || [], qi, game.questions.length);
+      lastLeaderboardKey = 'leaderboard_' + qi;
+
+      showLeaderboardForPlayer(
+        game.leaderboard || [],
+        qi,
+        game.questions.length
+      );
     }
 
     if (phase === 'final') {
-      showFinalScreen(game.leaderboard || []);
+      showFinalScreen(
+        game.leaderboard || []
+      );
     }
   });
 
-  // Listen for personal answer result
+  // Personal result listener
   glisten(`games/${S.pin}/results/${S.myId}`, snap => {
     if (!snap.exists()) return;
+
     const res = snap.val();
+
     if (!res || res.playerId !== S.myId) return;
-    if (res.qIndex !== undefined && res.qIndex !== S.currentQ) return;
+
+    if (
+      res.qIndex !== undefined &&
+      res.qIndex !== S.currentQ
+    ) return;
+
     S.myScore = res.score;
-    document.getElementById('pq-score').textContent = S.myScore;
+
+    document.getElementById('pq-score').textContent =
+      S.myScore;
+
     const fb = document.getElementById('pq-feedback');
+
     if (res.correct) {
-      fb.textContent = `✅ Correct! +${res.pts} pts`;
+      fb.textContent =
+        `✅ Correct! +${res.pts} pts`;
+
       fb.style.color = 'var(--green)';
-      fb.style.background = 'rgba(16,185,129,.15)';
+      fb.style.background =
+        'rgba(16,185,129,.15)';
     } else {
-      fb.textContent = `❌ Wrong!`;
+      fb.textContent = '❌ Wrong!';
+
       fb.style.color = 'var(--red)';
-      fb.style.background = 'rgba(239,68,68,.1)';
+      fb.style.background =
+        'rgba(239,68,68,.1)';
     }
+
     fb.style.display = 'block';
   });
 }
@@ -485,12 +519,18 @@ async function showHostQuestion(qi) {
 }
 
 function listenAnswers(qi, q) {
-  // Remove old answer listeners
   const oldRef = gref(`games/${S.pin}/answers/${qi}`);
   off(oldRef);
 
+  // ── Single guard: prevents revealHostAnswer firing more than once ──
+  let revealFired = false;
+
   glisten(`games/${S.pin}/answers/${qi}`, async snap => {
     if (!snap.exists()) return;
+
+    // ── If reveal already fired, just update the UI bars and exit ──
+    if (revealFired) return;
+
     const answers = snap.val();
     const counts  = [0,0,0,0];
     let   total   = 0;
@@ -499,10 +539,12 @@ function listenAnswers(qi, q) {
     document.getElementById('hq-answered').textContent = total;
     renderAnswerBars(counts, q.options);
 
-    // Check if all players answered
     const psnap   = await gonce(`games/${S.pin}/players`);
     const players = psnap.val() || {};
     if (total >= Object.keys(players).length) {
+      // ── Lock immediately before any async work ──
+      if (revealFired) return;
+      revealFired = true;
       clearInterval(S.timerInterval);
       revealHostAnswer(qi, q, counts);
     }
@@ -560,17 +602,27 @@ async function revealHostAnswer(qi, q, counts) {
 
   const isLast = qi >= S.questions.length - 1;
 
-if (isLast) {
-    document.getElementById('hq-results-btn').style.display = 'block';
-}
+  clearInterval(S.timerInterval);
+  document.getElementById('hq-timer').textContent = '✓';
+  document.getElementById('timer-arc').style.strokeDashoffset = '188.5';
 
-clearInterval(S.timerInterval);
-document.getElementById('hq-timer').textContent = '✓';
-document.getElementById('timer-arc').style.strokeDashoffset = '188.5';
+  // ── CHANGED: removed manual buttons, everything is now automatic ──
+  setTimeout(async () => {
+    await showLeaderboard(isLast);
 
-setTimeout(() => {
-    showLeaderboard(isLast);
-}, 2500);
+    if (isLast) {
+      // Final question → wait 5s on leaderboard → go to trophy screen
+      setTimeout(() => {
+        window.showFinal();
+      }, 5000);
+    } else {
+      // Not last → wait 4s on leaderboard → load next question
+      setTimeout(() => {
+        S.currentQ++;
+        showHostQuestion(S.currentQ);
+      }, 4000);
+    }
+  }, 2500);
 }
 
 window.nextQuestion = () => {};
@@ -605,15 +657,16 @@ async function showLeaderboard(isFinal) {
   if (!isFinal) {
     const isLastQuestion = S.currentQ >= S.questions.length - 1;
 
-    setTimeout(() => {
-      _leaderboardShown = false; // reset for next question
-      if (isLastQuestion) {
-        window.showFinal();
-      } else {
-        S.currentQ++;
-        showHostQuestion(S.currentQ);
-      }
-    }, 5000);
+    setTimeout(async () => {
+  // ── Write leaderboard phase FIRST, wait for Firebase to confirm ──
+  await gupd(`games/${S.pin}`, { phase: 'leaderboard' });
+  
+  // ── Then wait 4 seconds for players to see leaderboard ──
+  setTimeout(async () => {
+    S.currentQ++;
+    await showHostQuestion(S.currentQ);
+  }, 4000);
+}, 500); // small buffer after reveal
   } else {
     _leaderboardShown = false; // reset on final too
   }
@@ -672,7 +725,10 @@ function showPlayerQuestion(q, qi, total) {
     const btn = document.createElement('button');
     btn.className = `pq-opt col-${i}`;
     btn.innerHTML = `<div class="shape ${SHAPES[i]}" style="width:20px;height:20px;flex-shrink:0"></div>${opt}`;
-    btn.onclick   = () => submitAnswer(i, q.time);
+    btn.onclick = () => {
+  if (S.answered) return;
+  submitAnswer(i, q.time);
+  };
     opts.appendChild(btn);
   });
 
@@ -691,6 +747,13 @@ function showPlayerQuestion(q, qi, total) {
 async function submitAnswer(answerIdx, totalTime) {
   if (S.answered) return;
   S.answered = true;
+
+  // ── Disable ALL buttons INSTANTLY before anything else ──
+  document.querySelectorAll('.pq-opt').forEach(btn => {
+    btn.disabled = true;
+    btn.style.pointerEvents = 'none';
+  });
+
   clearInterval(S.timerInterval);
   disablePlayerOpts(answerIdx);
 
