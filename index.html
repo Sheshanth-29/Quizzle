@@ -386,7 +386,17 @@ function listenGamePhase() {
     if (eventKey === lastEventKey) return;
     lastEventKey = eventKey;
 
-    if (phase === 'question') {
+    if (phase === 'question' && qi > 0) {
+      const prevKey = 'leaderboard_' + (qi - 1);
+
+      if (lastLeaderboardKey !== prevKey) {
+        // leaderboard wasn't shown yet, delay question slightly
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
+
+
+    if (phase === 'question' ) {
       S.answered = false;
       S.currentQ = qi;
 
