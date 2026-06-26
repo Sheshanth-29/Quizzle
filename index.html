@@ -974,20 +974,23 @@
     }
 
     .leaderboard-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.8rem;
+      position: relative;
       margin-bottom: 1.5rem;
     }
 
     .leaderboard-row {
       display: flex;
       align-items: center;
-      padding: 1rem 1.5rem;
+      padding: 0.8rem 1.5rem;
       border-radius: 16px;
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border-panel);
-      transition: all 0.3s ease;
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 60px;
+      box-sizing: border-box;
+      transition: transform 1.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.8s ease, background 0.3s ease, border-color 0.3s ease;
     }
 
     .leaderboard-row.highlighted {
@@ -1656,6 +1659,8 @@
     let timerInterval = null;
     let lobbyPlayersListener = null;
     let lobbyGameStatusListener = null;
+    let previousScores = {}; // Snapshot of player scores before the current question ended
+    let hostCurrentQuestionIndex = -1; // Current active question index tracked by host for verification
 
     // Fetch Firebase server time offset
     const offsetRef = db.ref(".info/serverTimeOffset");
@@ -2569,6 +2574,10 @@
       dbRefs.lobbyPlayers = db.ref(`games/${gamePin}/players`);
       lobbyPlayersListener = dbRefs.lobbyPlayers.on("value", (snapshot) => {
         const players = snapshot.val() || {};
+        
+        // Anti-cheat verification
+        validateAndCorrectScores(players);
+
         const playerGrid = document.getElementById("lobby-players-grid");
         playerGrid.innerHTML = "";
         
@@ -2625,7 +2634,55 @@
       hostStartNextQuestion(0);
     });
 
+    function validateAndCorrectScores(players) {
+      if (!players || role !== "host") return;
+      
+      Object.keys(players).forEach(pKey => {
+        const p = players[pKey];
+        let expectedScore = 0;
+        let tampered = false;
+        
+        if (p.answers) {
+          Object.keys(p.answers).forEach(qKey => {
+            const qIdx = parseInt(qKey);
+            // Players cannot submit answers for questions ahead of the host's current question index
+            if (qIdx > hostCurrentQuestionIndex && hostCurrentQuestionIndex !== -1) {
+              tampered = true;
+              return;
+            }
+            
+            const ans = p.answers[qKey];
+            const q = currentQuestions[qIdx];
+            if (!q) return;
+            
+            if (ans.answer === q.correctAnswer) {
+              const timeLimit = q.timeLimit || 20;
+              const timeTaken = Math.max(0, Math.min(timeLimit, ans.timeTaken || 0));
+              const calculatedPoints = Math.round(500 + 500 * Math.max(0, 1 - (timeTaken / timeLimit)));
+              
+              if (ans.points !== calculatedPoints) {
+                tampered = true;
+              }
+              expectedScore += calculatedPoints;
+            } else {
+              if (ans.points !== 0) {
+                tampered = true;
+              }
+            }
+          });
+        }
+        
+        if (p.score !== expectedScore || tampered) {
+          console.warn(`Anti-Cheat: Corrected score for ${p.name}. Found: ${p.score}, Expected: ${expectedScore}`);
+          db.ref(`games/${gamePin}/players/${pKey}`).update({
+            score: expectedScore
+          });
+        }
+      });
+    }
+
     async function hostStartNextQuestion(qIdx) {
+      hostCurrentQuestionIndex = qIdx;
       if (qIdx >= currentQuestions.length) {
         await db.ref(`games/${gamePin}`).update({
           status: "finished",
@@ -2633,6 +2690,18 @@
         });
         hostLaunchPodium();
         return;
+      }
+
+      // Capture scores for rank climb animation before updating database
+      try {
+        const snap = await db.ref(`games/${gamePin}/players`).once("value");
+        const players = snap.val() || {};
+        previousScores = {};
+        Object.keys(players).forEach(pKey => {
+          previousScores[pKey] = players[pKey].score || 0;
+        });
+      } catch (e) {
+        console.error("Failed to snapshot previous scores:", e);
       }
 
       const q = currentQuestions[qIdx];
@@ -2848,35 +2917,147 @@
       hostLaunchLeaderboard(qIdx);
     }
 
+    function animateValue(id, start, end, duration) {
+      const obj = document.getElementById(id);
+      if (!obj) return;
+      if (start === end) {
+        obj.innerText = `${end} pts`;
+        return;
+      }
+      const range = end - start;
+      const startTime = performance.now();
+
+      function step(now) {
+        const progress = Math.min((now - startTime) / duration, 1);
+        const currentVal = Math.floor(start + progress * range);
+        obj.innerText = `${currentVal} pts`;
+        if (progress < 1) {
+          window.requestAnimationFrame(step);
+        } else {
+          obj.innerText = `${end} pts`;
+        }
+      }
+      window.requestAnimationFrame(step);
+    }
+
+    function renderAnimatedLeaderboard(listEl, playersObj, isHost) {
+      listEl.innerHTML = "";
+      const playerList = Object.keys(playersObj).map(pKey => ({
+        ...playersObj[pKey],
+        key: pKey
+      }));
+
+      if (playerList.length === 0) {
+        listEl.innerHTML = `<p style="text-align:center; color:var(--text-muted)">No scores yet.</p>`;
+        return;
+      }
+
+      // Sort by previous score to get previous order
+      const prevSorted = [...playerList].sort((a, b) => {
+        const scoreA = previousScores[a.key] !== undefined ? previousScores[a.key] : 0;
+        const scoreB = previousScores[b.key] !== undefined ? previousScores[b.key] : 0;
+        return scoreB - scoreA;
+      });
+
+      // Sort by current score to get new order
+      const newSorted = [...playerList].sort((a, b) => (b.score || 0) - (a.score || 0));
+
+      const top10Prev = prevSorted.slice(0, 10);
+      const top10New = newSorted.slice(0, 10);
+
+      // Collect keys to render: top 10 new, top 10 prev, plus current player if not in top 10 (on player view)
+      const renderKeys = new Set([
+        ...top10Prev.map(p => p.key),
+        ...top10New.map(p => p.key)
+      ]);
+
+      const myKey = !isHost ? stringToHexKey(nickname) : null;
+      const myPlayerObj = myKey ? playerList.find(p => p.key === myKey) : null;
+      if (myPlayerObj && !top10New.some(p => p.key === myKey)) {
+        renderKeys.add(myKey);
+      }
+
+      const playersToRender = playerList.filter(p => renderKeys.has(p.key));
+      const rowHeight = 72; // height 60px + 12px gap
+
+      listEl.style.position = "relative";
+      const hasMeExtra = (myPlayerObj && !top10New.some(p => p.key === myKey));
+      const displayCount = top10New.length + (hasMeExtra ? 1 : 0);
+      listEl.style.height = `${displayCount * rowHeight}px`;
+
+      playersToRender.forEach(player => {
+        const prevIdx = top10Prev.findIndex(p => p.key === player.key);
+        const newIdx = top10New.findIndex(p => p.key === player.key);
+
+        const isMe = (!isHost && player.key === myKey);
+
+        let startIdx;
+        if (prevIdx !== -1) {
+          startIdx = prevIdx;
+        } else if (isMe) {
+          startIdx = top10Prev.length;
+        } else {
+          startIdx = 10;
+        }
+
+        const row = document.createElement("div");
+        row.className = `leaderboard-row ${isMe ? 'highlighted' : ''}`;
+        row.style.position = "absolute";
+        row.style.left = "0";
+        row.style.right = "0";
+        row.style.height = "60px";
+        row.style.boxSizing = "border-box";
+        row.style.transform = `translateY(${startIdx * rowHeight}px)`;
+        row.style.opacity = (prevIdx !== -1 || isMe) ? "1" : "0";
+        row.style.transition = "transform 1.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.8s ease, background 0.3s ease, border-color 0.3s ease";
+
+        const startRank = prevIdx !== -1 ? `#${prevIdx + 1}` : (isMe ? `#${prevSorted.findIndex(p => p.key === myKey) + 1}` : "");
+        const startScore = previousScores[player.key] !== undefined ? previousScores[player.key] : 0;
+
+        row.innerHTML = `
+          <div class="leaderboard-rank" id="rank-val-${player.key}">${startRank}</div>
+          <div class="leaderboard-name">${player.emoji || '👤'} ${escapeHtml(player.name)} ${isMe ? '(You)' : ''}</div>
+          <div class="leaderboard-score" id="score-val-${player.key}">${startScore} pts</div>
+        `;
+
+        listEl.appendChild(row);
+
+        setTimeout(() => {
+          let endIdx;
+          if (newIdx !== -1) {
+            endIdx = newIdx;
+          } else if (isMe) {
+            endIdx = top10New.length;
+          } else {
+            endIdx = 10;
+          }
+
+          row.style.transform = `translateY(${endIdx * rowHeight}px)`;
+          row.style.opacity = (newIdx !== -1 || isMe) ? "1" : "0";
+
+          const rankEl = document.getElementById(`rank-val-${player.key}`);
+          if (rankEl) {
+            const finalRank = newIdx !== -1 ? newIdx + 1 : playerList.sort((a,b) => b.score - a.score).findIndex(p => p.key === player.key) + 1;
+            rankEl.innerText = `#${finalRank}`;
+          }
+
+          animateValue(`score-val-${player.key}`, startScore, player.score || 0, 1500);
+        }, 150);
+      });
+    }
+
     function hostLaunchLeaderboard(qIdx) {
       showScreen("screen-host-leaderboard");
 
       db.ref(`games/${gamePin}/players`).once("value", (snapshot) => {
         const players = snapshot.val() || {};
-        const sorted = Object.values(players).sort((a,b) => b.score - a.score);
-        
         const listEl = document.getElementById("host-leaderboard-list");
-        listEl.innerHTML = "";
         
-        if (sorted.length === 0) {
-          listEl.innerHTML = `<p style="text-align:center; color:var(--text-muted)">No scores yet.</p>`;
-          return;
-        }
-
-        sorted.slice(0, 5).forEach((p, idx) => {
-          const row = document.createElement("div");
-          row.className = "leaderboard-row";
-          row.innerHTML = `
-            <div class="leaderboard-rank">#${idx + 1}</div>
-            <div class="leaderboard-name">${p.emoji || '👤'} ${escapeHtml(p.name)}</div>
-            <div class="leaderboard-score">${p.score} pts</div>
-          `;
-          listEl.appendChild(row);
-        });
+        renderAnimatedLeaderboard(listEl, players, true);
 
         setTimeout(() => {
           hostStartNextQuestion(qIdx + 1);
-        }, 4000);
+        }, 6000); // Extended slightly to let score crawl and climb animations finish completely
       });
     }
 
@@ -3118,6 +3299,13 @@
             showScreen("screen-player-lobby");
           }
         } else if (game.status === "question") {
+          // Snapshot previous scores when moving to a new question phase
+          if (game.players) {
+            previousScores = {};
+            Object.keys(game.players).forEach(pKey => {
+              previousScores[pKey] = game.players[pKey].score || 0;
+            });
+          }
           // ONLY trigger full question loader if active phase or timer variables changed.
           // This avoids CPU/rendering lag caused by other players submitting answers.
           if (statusChanged || questionChanged || pauseChanged || timerStartChanged) {
@@ -3337,27 +3525,9 @@
 
     function playerLaunchLeaderboard(game) {
       showScreen("screen-player-leaderboard");
-      
       const players = game.players || {};
-      const sorted = Object.values(players).sort((a,b) => b.score - a.score);
-      const userKey = stringToHexKey(nickname);
-      
       const listEl = document.getElementById("player-leaderboard-list");
-      listEl.innerHTML = "";
-
-      sorted.forEach((p, idx) => {
-        const isMe = (p.name === nickname);
-        if (idx < 3 || isMe) {
-          const row = document.createElement("div");
-          row.className = `leaderboard-row ${isMe ? 'highlighted' : ''}`;
-          row.innerHTML = `
-            <div class="leaderboard-rank">#${idx + 1}</div>
-            <div class="leaderboard-name">${p.emoji || '👤'} ${escapeHtml(p.name)} ${isMe ? '(You)' : ''}</div>
-            <div class="leaderboard-score">${p.score} pts</div>
-          `;
-          listEl.appendChild(row);
-        }
-      });
+      renderAnimatedLeaderboard(listEl, players, false);
     }
 
     function playerLaunchPodium(game) {
