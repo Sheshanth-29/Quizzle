@@ -1666,33 +1666,363 @@
     // Sample Questions List
     const sampleQuestions = [
       {
-        question: "What is the only letter that does not appear in any U.S. state name?",
-        options: ["J", "Q", "X", "Z"],
-        correctAnswer: 1,
+        question: "Which HTML element is used to define the main content of a webpage?",
+        options: ["<section>", "<article>", "<body>", "<main>"],
+        correctAnswer: 3,
         timeLimit: 20
       },
       {
-        question: "Which programming language was created in 10 days by Brendan Eich?",
-        options: ["Python", "Java", "JavaScript", "C++"],
-        correctAnswer: 2,
-        timeLimit: 15
-      },
-      {
-        question: "What is the approximate speed of light?",
-        options: ["300,000 km/s", "150,000 km/s", "1,000,000 km/s", "50,000 km/s"],
+        question: "Which HTML tag is used to group related options inside a <select> element?",
+        options: ["<optgroup>", "<group>", "<optiongroup>", "<fieldset>"],
         correctAnswer: 0,
         timeLimit: 20
       },
       {
-        question: "Which planet in our solar system is known for its spectacular rings?",
-        options: ["Jupiter", "Saturn", "Uranus", "Neptune"],
-        correctAnswer: 1,
-        timeLimit: 15
+        question: "Which attribute is used to specify a unique identifier for an HTML element?",
+        options: ["class", "name", "value", "id"],
+        correctAnswer: 3,
+        timeLimit: 20
       },
       {
-        question: "What does the 'API' acronym stand for in web development?",
-        options: ["Applied Program Integration", "Advanced Protocol Interface", "Application Programming Interface", "Automated Process Integration"],
+        question: "Which HTML element is specifically designed for playing video files?",
+        options: ["<media>", "<video>", "<movie>", "<player>"],
+        correctAnswer: 1,
+        timeLimit: 20
+      },
+      {
+        question: "Which attribute specifies that an input field must be completed before submitting a form?",
+        options: ["mandatory", "validate", "required", "checked"],
         correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which HTML tag is used to embed another webpage inside the current webpage?",
+        options: ["<iframe>", "<frame>", "<embed>", "<object>"],
+        correctAnswer: 0,
+        timeLimit: 20
+      },
+      {
+        question: "Which attribute improves accessibility by describing an image?",
+        options: ["title", "src", "alt", "name"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which semantic element represents independent content that can stand alone?",
+        options: ["<section>", "<div>", "<aside>", "<article>"],
+        correctAnswer: 3,
+        timeLimit: 20
+      },
+      {
+        question: "What is the purpose of the defer attribute in the <script> tag?",
+        options: ["Loads CSS later", "Executes JavaScript before HTML", "Delays JavaScript execution until HTML parsing is complete", "Prevents JavaScript execution"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which input type allows users to upload a file?",
+        options: ["file", "upload", "image", "attach"],
+        correctAnswer: 0,
+        timeLimit: 20
+      },
+      {
+        question: "Which property changes the stacking order of positioned elements?",
+        options: ["order", "stack", "z-index", "priority"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which CSS property controls the spacing inside an element?",
+        options: ["margin", "padding", "spacing", "gap"],
+        correctAnswer: 1,
+        timeLimit: 20
+      },
+      {
+        question: "Which Flexbox property aligns items vertically in a row layout?",
+        options: ["justify-content", "flex-wrap", "align-items", "flex-grow"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which CSS Grid property defines the number and size of columns?",
+        options: ["grid-column", "columns", "grid-layout", "grid-template-columns"],
+        correctAnswer: 3,
+        timeLimit: 20
+      },
+      {
+        question: "Which selector has the highest specificity?",
+        options: ["div", ".container", "#container", "*"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "What does display: none do?",
+        options: ["Removes the element from the document layout", "Makes an element invisible but keeps its space", "Hides only text", "Changes opacity"],
+        correctAnswer: 0,
+        timeLimit: 20
+      },
+      {
+        question: "Which CSS property creates smooth animation between property changes?",
+        options: ["animation", "transform", "translate", "transition"],
+        correctAnswer: 3,
+        timeLimit: 20
+      },
+      {
+        question: "Which positioning value keeps an element fixed relative to the browser window?",
+        options: ["relative", "fixed", "sticky", "absolute"],
+        correctAnswer: 1,
+        timeLimit: 20
+      },
+      {
+        question: "Which CSS function limits a responsive value between minimum and maximum values?",
+        options: ["calc()", "min()", "clamp()", "max()"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which pseudo-class selects the first child of an element?",
+        options: [":first-child", ":first", ":nth(1)", ":child"],
+        correctAnswer: 0,
+        timeLimit: 20
+      },
+      {
+        question: "Which array method returns a new array containing only elements that satisfy a condition?",
+        options: ["map()", "reduce()", "filter()", "find()"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which keyword creates a block-scoped variable?",
+        options: ["var", "static", "define", "let"],
+        correctAnswer: 3,
+        timeLimit: 20
+      },
+      {
+        question: "What is the output of typeof []?",
+        options: ["array", "object", "list", "undefined"],
+        correctAnswer: 1,
+        timeLimit: 20
+      },
+      {
+        question: "Which method converts a JSON string into a JavaScript object?",
+        options: ["JSON.stringify()", "JSON.parse()", "JSON.object()", "JSON.convert()"],
+        correctAnswer: 1,
+        timeLimit: 20
+      },
+      {
+        question: "Which operator is used for optional chaining?",
+        options: ["&&", "??", "?.", "=>"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which method executes a function once for every array element?",
+        options: ["filter()", "forEach()", "find()", "reduce()"],
+        correctAnswer: 1,
+        timeLimit: 20
+      },
+      {
+        question: "Which JavaScript feature allows a function to remember variables from its outer scope?",
+        options: ["Callback", "Promise", "Hoisting", "Closure"],
+        correctAnswer: 3,
+        timeLimit: 20
+      },
+      {
+        question: "What is the output of typeof null?",
+        options: ["null", "object", "undefined", "boolean"],
+        correctAnswer: 1,
+        timeLimit: 20
+      },
+      {
+        question: "Which keyword is used to handle asynchronous operations in modern JavaScript?",
+        options: ["pause", "delay", "await", "sync"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which method creates a shallow copy of an array?",
+        options: ["splice()", "split()", "concat()", "slice()"],
+        correctAnswer: 3,
+        timeLimit: 20
+      },
+      {
+        question: "What is the time complexity of binary search on a sorted array?",
+        options: ["O(n)", "O(n log n)", "O(log n)", "O(1)"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which algorithm is commonly used to reverse an array in-place?",
+        options: ["Two-pointer technique", "Nested loops", "Binary Search", "BFS"],
+        correctAnswer: 0,
+        timeLimit: 20
+      },
+      {
+        question: "Kadane's Algorithm is used to find:",
+        options: ["Largest element", "Longest Increasing Subsequence", "Maximum Subarray Sum", "Median"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "What is the time complexity of Kadane's Algorithm?",
+        options: ["O(n²)", "O(log n)", "O(n log n)", "O(n)"],
+        correctAnswer: 3,
+        timeLimit: 20
+      },
+      {
+        question: "Which algorithm checks whether a string is a palindrome efficiently?",
+        options: ["DFS", "Binary Search", "Two pointers", "Merge Sort"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which algorithm is commonly used for pattern matching in strings?",
+        options: ["BFS", "KMP", "Prim's", "Heap Sort"],
+        correctAnswer: 1,
+        timeLimit: 20
+      },
+      {
+        question: "Which data structure follows LIFO?",
+        options: ["Queue", "Linked List", "Tree", "Stack"],
+        correctAnswer: 3,
+        timeLimit: 20
+      },
+      {
+        question: "Which operation adds an element to a queue?",
+        options: ["Push", "Enqueue", "Pop", "Peek"],
+        correctAnswer: 1,
+        timeLimit: 20
+      },
+      {
+        question: "Detecting a cycle in a linked list is commonly done using:",
+        options: ["DFS", "Merge Sort", "Floyd's Cycle Detection Algorithm", "BFS"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "What is the time complexity of inserting at the head of a linked list?",
+        options: ["O(n)", "O(log n)", "O(n²)", "O(1)"],
+        correctAnswer: 3,
+        timeLimit: 20
+      },
+      {
+        question: "Which Stack operation returns the top element without removing it?",
+        options: ["push()", "pop()", "peek()", "top()"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which data structure is commonly used for BFS?",
+        options: ["Stack", "Heap", "Queue", "Tree"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which traversal visits Left → Root → Right?",
+        options: ["Preorder", "Postorder", "Inorder", "Level Order"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which traversal uses a Queue?",
+        options: ["DFS", "Inorder", "Level Order", "Postorder"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Topological Sort is applicable only to:",
+        options: ["Trees", "Undirected Graphs", "Complete Graphs", "Directed Acyclic Graphs"],
+        correctAnswer: 3,
+        timeLimit: 20
+      },
+      {
+        question: "Which algorithm finds the shortest path in a weighted graph with non-negative weights?",
+        options: ["BFS", "DFS", "Prim", "Dijkstra"],
+        correctAnswer: 3,
+        timeLimit: 20
+      },
+      {
+        question: "Which traversal uses recursion naturally?",
+        options: ["BFS", "DFS", "Level Order", "Heap"],
+        correctAnswer: 1,
+        timeLimit: 20
+      },
+      {
+        question: "Which algorithm detects cycles in a Directed Graph using indegrees?",
+        options: ["Prim's", "Kruskal's", "Kahn's Algorithm", "Bellman-Ford"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which algorithm finds the Minimum Spanning Tree?",
+        options: ["Dijkstra", "Floyd Warshall", "Prim's", "BFS"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "The height of a balanced Binary Search Tree is approximately:",
+        options: ["O(n)", "O(log n)", "O(n²)", "O(1)"],
+        correctAnswer: 1,
+        timeLimit: 20
+      },
+      {
+        question: "Dynamic Programming is mainly used to solve problems with:",
+        options: ["Cycles only", "Graphs only", "Sorting only", "Overlapping subproblems"],
+        correctAnswer: 3,
+        timeLimit: 20
+      },
+      {
+        question: "Memoization is associated with:",
+        options: ["Bottom-up approach", "Greedy", "Top-down approach", "Divide and Conquer"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which sorting algorithm has the best average-case time complexity?",
+        options: ["Bubble Sort", "Selection Sort", "Merge Sort", "Insertion Sort"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "What is the worst-case time complexity of Quick Sort?",
+        options: ["O(log n)", "O(n²)", "O(n)", "O(n log n)"],
+        correctAnswer: 1,
+        timeLimit: 20
+      },
+      {
+        question: "Which searching algorithm requires the array to be sorted?",
+        options: ["Linear Search", "DFS", "Binary Search", "BFS"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "Which data structure is used internally in recursion?",
+        options: ["Queue", "Heap", "Stack", "Graph"],
+        correctAnswer: 2,
+        timeLimit: 20
+      },
+      {
+        question: "The time complexity of Merge Sort is:",
+        options: ["O(n²)", "O(log n)", "O(n)", "O(n log n)"],
+        correctAnswer: 3,
+        timeLimit: 20
+      },
+      {
+        question: "Which algorithm is used to find connected components in an undirected graph?",
+        options: ["Binary Search", "Heap Sort", "Merge Sort", "DFS"],
+        correctAnswer: 3,
+        timeLimit: 20
+      },
+      {
+        question: "Which traversal is used to serialize a Binary Tree uniquely when null nodes are included?",
+        options: ["Inorder", "Preorder", "Postorder", "Level Order"],
+        correctAnswer: 1,
+        timeLimit: 20
+      },
+      {
+        question: "Which data structure provides O(1) average-case lookup time?",
+        options: ["Array", "Linked List", "Stack", "HashMap"],
+        correctAnswer: 3,
         timeLimit: 20
       }
     ];
