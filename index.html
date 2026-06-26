@@ -1296,11 +1296,11 @@
       <div id="draft-restore-banner" class="glass-card hidden" style="padding: 1rem 1.5rem; margin-bottom: 1.5rem; border: 1px dashed var(--color-accent); background: rgba(0, 240, 255, 0.05); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
         <div style="display:flex; align-items:center; gap:0.8rem;">
           <i class="fa-solid fa-floppy-disk" style="color: var(--color-accent); font-size: 1.3rem;"></i>
-          <span id="draft-info-text">You have an unsaved quiz draft.</span>
+          <span id="draft-info-text">You have a saved quiz draft.</span>
         </div>
         <div style="display: flex; gap: 0.8rem; flex-shrink: 0;">
-          <button id="btn-draft-restore" class="btn" style="padding: 0.4rem 1rem; font-size: 0.9rem; border-radius: 8px; background: var(--color-accent); color: var(--bg-dark); box-shadow: 0 4px 12px rgba(0, 240, 255, 0.25);">Restore</button>
-          <button id="btn-draft-discard" class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.9rem; border-radius: 8px;">Discard</button>
+          <button id="btn-draft-restore" class="btn" style="padding: 0.4rem 1rem; font-size: 0.9rem; border-radius: 8px; background: var(--color-accent); color: var(--bg-dark); box-shadow: 0 4px 12px rgba(0, 240, 255, 0.25);">Restore Previous Draft</button>
+          <button id="btn-draft-discard" class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.9rem; border-radius: 8px;">Discard Draft</button>
         </div>
       </div>
 
@@ -2162,7 +2162,6 @@
         };
 
         await db.ref(`games/${gamePin}`).set(gameInitData);
-        clearQuizDraft();
         saveSession(gamePin, "Host", "host");
 
         document.getElementById("lobby-pin").innerText = `${gamePin.slice(0,3)} ${gamePin.slice(3)}`;
