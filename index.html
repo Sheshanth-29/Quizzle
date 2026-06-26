@@ -1395,6 +1395,9 @@
           <button id="btn-host-pause" class="btn btn-secondary" style="padding: 0.6rem 1.2rem; border-radius: 12px;">
             <i class="fa-solid fa-pause"></i> Pause
           </button>
+          <button id="btn-host-end-quiz-question" class="btn btn-secondary btn-end-quiz" style="padding: 0.6rem 1.2rem; border-radius: 12px; background: rgba(239, 68, 68, 0.15); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.25);">
+            <i class="fa-solid fa-stop"></i> End Quiz
+          </button>
           <div class="timer-container" id="host-timer">00</div>
         </div>
       </div>
@@ -1440,10 +1443,15 @@
         <div class="leaderboard-title">Current Leaderboard</div>
         <p style="color:var(--text-muted); margin-top:0.3rem;" id="leaderboard-sub">Next question starts shortly...</p>
       </div>
-      <div class="glass-card" style="padding: 1.5rem;">
+      <div class="glass-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
         <div class="leaderboard-list" id="host-leaderboard-list">
           <!-- Renders top 5 players -->
         </div>
+      </div>
+      <div style="text-align: center;">
+        <button id="btn-host-end-quiz-leaderboard" class="btn btn-secondary btn-end-quiz" style="padding: 0.6rem 1.2rem; border-radius: 12px; background: rgba(239, 68, 68, 0.15); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.25);">
+          <i class="fa-solid fa-stop"></i> End Quiz
+        </button>
       </div>
     </div>
 
@@ -2593,6 +2601,26 @@
       showScreen("screen-home");
     });
 
+    async function hostEndQuizEarly() {
+      if (confirm("Are you sure you want to end the quiz early? This will return both you and all participants to the home screen.")) {
+        clearInterval(hostTimerInterval);
+        unbindHostRefs();
+        try {
+          await db.ref(`games/${gamePin}`).update({ status: "ended" });
+          setTimeout(async () => {
+            await db.ref(`games/${gamePin}`).remove();
+          }, 1000);
+        } catch (e) {
+          console.error("Error ending quiz:", e);
+        }
+        clearSession();
+        showScreen("screen-home");
+      }
+    }
+
+    document.getElementById("btn-host-end-quiz-question").addEventListener("click", hostEndQuizEarly);
+    document.getElementById("btn-host-end-quiz-leaderboard").addEventListener("click", hostEndQuizEarly);
+
 
     // ----------------------------------
     // PLAYER FLOW: JOIN LOBBY
@@ -2733,6 +2761,14 @@
         }
 
         const game = snapshot.val();
+        if (game && game.status === "ended") {
+          showToast("Quiz was ended by the host.", "info");
+          unbindPlayerRefs();
+          clearSession();
+          showScreen("screen-home");
+          document.getElementById("btn-player-join-submit").disabled = false;
+          return;
+        }
         currentQuestions = game.questions || [];
 
         // Check if the actual gameplay status, question index, or timer states changed
