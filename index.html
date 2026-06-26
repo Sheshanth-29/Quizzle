@@ -177,6 +177,13 @@
       color: white !important;
     }
 
+    .btn-inline-add:hover {
+      background: rgba(0, 240, 255, 0.18) !important;
+      border-color: var(--color-accent) !important;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+      transform: scale(1.1);
+    }
+
     input, select {
       font-family: var(--font-family);
       background: rgba(255, 255, 255, 0.05);
@@ -2080,6 +2087,11 @@
               <input type="text" class="option-text-input" data-qidx="${qIndex}" data-oidx="3" value="${escapeHtml(q.options[3])}" placeholder="Option D" required>
             </div>
           </div>
+          <div style="display: flex; justify-content: center; margin-top: 1.5rem; border-top: 1px dashed rgba(255, 255, 255, 0.08); padding-top: 1rem;">
+            <button type="button" class="btn-inline-add" data-idx="${qIndex}" title="Add New Question" style="width: 40px; height: 40px; border-radius: 50%; border: 1px dashed var(--color-accent); background: rgba(0, 240, 255, 0.05); color: var(--color-accent); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: all 0.3s ease;">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
         `;
         
         container.appendChild(card);
@@ -2124,6 +2136,22 @@
           const qidx = parseInt(e.target.getAttribute("data-qidx"));
           currentQuestions[qidx].correctAnswer = parseInt(e.target.value);
           saveQuizDraftDebounced();
+        });
+      });
+
+      container.querySelectorAll(".btn-inline-add").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const defTime = parseInt(document.getElementById("input-setup-timer").value) || 20;
+          currentQuestions.push({
+            question: "",
+            options: ["", "", "", ""],
+            correctAnswer: 0,
+            timeLimit: defTime
+          });
+          renderQuestionEditor();
+          saveQuizDraftDebounced();
+          const listContainer = document.getElementById("editor-questions-list");
+          listContainer.scrollTop = listContainer.scrollHeight;
         });
       });
     }
