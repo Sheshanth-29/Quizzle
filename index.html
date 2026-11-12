@@ -1,31 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quizzle — Live Classroom Quiz</title>
-  
+
   <!-- SEO Meta Tags -->
-  <meta name="description" content="Quizzle is a premium, real-time live classroom quiz application. Host or join game rooms instantly with smooth puzzle animations, live response bars, and leaderboards.">
-  
+  <meta name="description"
+    content="Quizzle is a premium, real-time live classroom quiz application. Host or join game rooms instantly with smooth puzzle animations, live response bars, and leaderboards.">
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <!-- Firebase Compat Libraries (via CDN) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-  
+
   <!-- Runtime API Key (gitignored — see config.example.js) -->
   <script src="config.js" onerror="console.warn('config.js not found — AI generation disabled.')"></script>
 
   <!-- QRCode.js (via CDN) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  
+
   <!-- Canvas Confetti (via CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
@@ -40,19 +43,19 @@
       --bg-panel-hover: rgba(27, 38, 59, 0.9);
       --border-panel: rgba(255, 255, 255, 0.1);
       --border-panel-focus: rgba(255, 255, 255, 0.25);
-      
+
       --color-primary: #a855f7;
       --color-secondary: #6366f1;
       --color-accent: #00f0ff;
       --color-success: #10b981;
       --color-danger: #ef4444;
       --color-warning: #eab308;
-      
+
       --text-main: #f3f4f6;
       --text-muted: #9ca3af;
-      
+
       --font-family: 'Outfit', sans-serif;
-      
+
       /* Splash screen puzzle variables */
       --piece-size: clamp(42px, 8vw, 90px);
       --overlap-size: calc(var(--piece-size) * 0.7142857);
@@ -187,7 +190,8 @@
       transform: scale(1.1);
     }
 
-    input, select {
+    input,
+    select {
       font-family: var(--font-family);
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border-panel);
@@ -200,7 +204,8 @@
       width: 100%;
     }
 
-    input:focus, select:focus {
+    input:focus,
+    select:focus {
       border-color: var(--color-accent);
       background: rgba(255, 255, 255, 0.08);
       box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
@@ -235,6 +240,7 @@
         opacity: 0;
         transform: translateY(15px) scale(0.98);
       }
+
       to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -269,7 +275,7 @@
       inset: 0;
       opacity: 0.04;
       pointer-events: none;
-      background-image: 
+      background-image:
         radial-gradient(circle at 15% 25%, #ff007f 10%, transparent 30%),
         radial-gradient(circle at 85% 15%, #00f0ff 10%, transparent 30%),
         radial-gradient(circle at 50% 80%, #ffeb3b 10%, transparent 35%);
@@ -326,7 +332,7 @@
       left: 50%;
       width: 2px;
       height: 2px;
-      background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(138,43,226,0.8) 30%, rgba(0,240,255,0) 70%);
+      background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(138, 43, 226, 0.8) 30%, rgba(0, 240, 255, 0) 70%);
       transform: translate(-50%, -50%) scale(0);
       opacity: 0;
       pointer-events: none;
@@ -343,9 +349,11 @@
         transform: translate(-50%, -50%) scale(0);
         opacity: 0;
       }
+
       10% {
         opacity: 1;
       }
+
       100% {
         transform: translate(-50%, -50%) scale(1000);
         opacity: 0;
@@ -385,6 +393,7 @@
         transform: translate(0, 0) scale(1);
         opacity: 1;
       }
+
       100% {
         transform: translate(var(--dx), var(--dy)) scale(0);
         opacity: 0;
@@ -441,7 +450,7 @@
 
     /* Demo button */
     .btn-demo {
-      background: linear-gradient(135deg, rgba(0,240,255,0.12), rgba(168,85,247,0.12));
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.12), rgba(168, 85, 247, 0.12));
       color: var(--color-accent);
       border: 1px solid rgba(0, 240, 255, 0.35);
       position: relative;
@@ -452,7 +461,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, rgba(0,240,255,0.08), rgba(168,85,247,0.08));
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.08), rgba(168, 85, 247, 0.08));
       opacity: 0;
       transition: opacity 0.3s ease;
     }
@@ -465,11 +474,87 @@
       border-color: var(--color-accent);
       color: #fff;
       transform: translateY(-2px);
-      box-shadow: 0 0 20px rgba(0,240,255,0.25), 0 8px 20px rgba(0,0,0,0.3);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.25), 0 8px 20px rgba(0, 0, 0, 0.3);
     }
 
     .btn-demo:active {
       transform: translateY(1px);
+    }
+
+    /* Demo Player Name Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 4, 13, 0.78);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10001;
+      padding: 1.5rem;
+      animation: modal-fade-in 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .modal-card {
+      max-width: 440px;
+      width: 100%;
+      padding: 2.2rem 2rem;
+      text-align: center;
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(0, 240, 255, 0.15);
+    }
+
+    @keyframes modal-fade-in {
+      from {
+        opacity: 0;
+        transform: scale(0.95) translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    /* Demo Interactive Host Cards */
+    .host-answer-card.interactive {
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .host-answer-card.interactive:hover:not(.locked) {
+      border-color: var(--color-accent) !important;
+      background: rgba(0, 240, 255, 0.08) !important;
+      transform: translateY(-3px) scale(1.01);
+      box-shadow: 0 8px 25px rgba(0, 240, 255, 0.25);
+    }
+
+    .host-answer-card.user-selected {
+      border-color: var(--color-accent) !important;
+      background: rgba(0, 240, 255, 0.15) !important;
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.45) !important;
+      transform: scale(1.01);
+    }
+
+    .demo-user-pill {
+      position: absolute;
+      top: 0.65rem;
+      right: 0.85rem;
+      background: var(--color-accent);
+      color: #05040d;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 0.22rem 0.65rem;
+      border-radius: 50px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      z-index: 5;
+      animation: chip-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      box-shadow: 0 2px 10px rgba(0, 240, 255, 0.4);
     }
 
     /* Demo badge pill on answer cards during demo */
@@ -518,7 +603,7 @@
       padding: 1.4rem 1.6rem;
       margin-bottom: 1.5rem;
       border: 1px solid rgba(168, 85, 247, 0.3);
-      background: linear-gradient(135deg, rgba(168,85,247,0.06), rgba(99,102,241,0.06));
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.06), rgba(99, 102, 241, 0.06));
       position: relative;
       overflow: hidden;
     }
@@ -527,7 +612,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: radial-gradient(ellipse at top left, rgba(168,85,247,0.08) 0%, transparent 60%);
+      background: radial-gradient(ellipse at top left, rgba(168, 85, 247, 0.08) 0%, transparent 60%);
       pointer-events: none;
     }
 
@@ -550,8 +635,8 @@
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 1px;
-      background: rgba(168,85,247,0.2);
-      border: 1px solid rgba(168,85,247,0.4);
+      background: rgba(168, 85, 247, 0.2);
+      border: 1px solid rgba(168, 85, 247, 0.4);
       color: var(--color-primary);
       padding: 0.15rem 0.55rem;
       border-radius: 50px;
@@ -565,12 +650,12 @@
 
     .ai-gen-row input {
       flex: 1;
-      border-color: rgba(168,85,247,0.3);
+      border-color: rgba(168, 85, 247, 0.3);
     }
 
     .ai-gen-row input:focus {
       border-color: var(--color-primary);
-      box-shadow: 0 0 10px rgba(168,85,247,0.25);
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.25);
     }
 
     .btn-ai-generate {
@@ -589,12 +674,12 @@
       white-space: nowrap;
       font-family: var(--font-family);
       flex-shrink: 0;
-      box-shadow: 0 4px 15px rgba(168,85,247,0.35);
+      box-shadow: 0 4px 15px rgba(168, 85, 247, 0.35);
     }
 
     .btn-ai-generate:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(168,85,247,0.55);
+      box-shadow: 0 8px 25px rgba(168, 85, 247, 0.55);
       filter: brightness(1.1);
     }
 
@@ -617,7 +702,7 @@
     .ai-gen-spinner {
       width: 14px;
       height: 14px;
-      border: 2px solid rgba(168,85,247,0.2);
+      border: 2px solid rgba(168, 85, 247, 0.2);
       border-top-color: var(--color-primary);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
@@ -636,8 +721,8 @@
       font-weight: 700;
       padding: 0.3rem 0.9rem;
       border-radius: 50px;
-      border: 1px solid rgba(168,85,247,0.3);
-      background: rgba(168,85,247,0.08);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      background: rgba(168, 85, 247, 0.08);
       color: var(--color-primary);
       cursor: pointer;
       transition: all 0.2s ease;
@@ -646,7 +731,7 @@
 
     .ai-count-chip:hover,
     .ai-count-chip.active {
-      background: rgba(168,85,247,0.22);
+      background: rgba(168, 85, 247, 0.22);
       border-color: var(--color-primary);
       color: #fff;
     }
@@ -656,7 +741,7 @@
       text-align: center;
       padding: 1rem;
       font-size: 0.82rem;
-      color: rgba(255,255,255,0.22);
+      color: white;
       letter-spacing: 0.5px;
       position: relative;
       z-index: 2;
@@ -664,7 +749,7 @@
     }
 
     .app-footer span {
-      color: rgba(168,85,247,0.6);
+      color: white;
     }
 
     /* ----------------------------------
@@ -695,14 +780,17 @@
     .question-list-container::-webkit-scrollbar {
       width: 6px;
     }
+
     .question-list-container::-webkit-scrollbar-track {
       background: rgba(255, 255, 255, 0.02);
       border-radius: 10px;
     }
+
     .question-list-container::-webkit-scrollbar-thumb {
       background: rgba(255, 255, 255, 0.1);
       border-radius: 10px;
     }
+
     .question-list-container::-webkit-scrollbar-thumb:hover {
       background: rgba(255, 255, 255, 0.2);
     }
@@ -783,10 +871,25 @@
       flex-shrink: 0;
     }
 
-    .option-input-wrapper.wrapper-a .option-label { background: rgba(239, 68, 68, 0.15); color: var(--color-danger); }
-    .option-input-wrapper.wrapper-b .option-label { background: rgba(99, 102, 241, 0.15); color: var(--color-secondary); }
-    .option-input-wrapper.wrapper-c .option-label { background: rgba(234, 179, 8, 0.15); color: var(--color-warning); }
-    .option-input-wrapper.wrapper-d .option-label { background: rgba(16, 185, 129, 0.15); color: var(--color-success); }
+    .option-input-wrapper.wrapper-a .option-label {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--color-danger);
+    }
+
+    .option-input-wrapper.wrapper-b .option-label {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--color-secondary);
+    }
+
+    .option-input-wrapper.wrapper-c .option-label {
+      background: rgba(234, 179, 8, 0.15);
+      color: var(--color-warning);
+    }
+
+    .option-input-wrapper.wrapper-d .option-label {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--color-success);
+    }
 
     .option-text-input {
       background: transparent !important;
@@ -844,7 +947,7 @@
       background: white;
       padding: 1rem;
       border-radius: 16px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
       margin-bottom: 1.5rem;
       display: inline-block;
     }
@@ -887,8 +990,15 @@
     }
 
     @keyframes chip-pop {
-      from { transform: scale(0.6); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
+      from {
+        transform: scale(0.6);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
     }
 
     .player-chip::before {
@@ -927,8 +1037,13 @@
     }
 
     @keyframes timer-pulse {
-      0% { transform: scale(1); }
-      100% { transform: scale(1.08); }
+      0% {
+        transform: scale(1);
+      }
+
+      100% {
+        transform: scale(1.08);
+      }
     }
 
     /* ----------------------------------
@@ -974,10 +1089,21 @@
       gap: 1rem;
     }
 
-    .host-answer-card.option-a { border-left-color: var(--color-danger); }
-    .host-answer-card.option-b { border-left-color: var(--color-secondary); }
-    .host-answer-card.option-c { border-left-color: var(--color-warning); }
-    .host-answer-card.option-d { border-left-color: var(--color-success); }
+    .host-answer-card.option-a {
+      border-left-color: var(--color-danger);
+    }
+
+    .host-answer-card.option-b {
+      border-left-color: var(--color-secondary);
+    }
+
+    .host-answer-card.option-c {
+      border-left-color: var(--color-warning);
+    }
+
+    .host-answer-card.option-d {
+      border-left-color: var(--color-success);
+    }
 
     .host-answer-fill {
       display: none !important;
@@ -1062,7 +1188,9 @@
     }
 
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .player-interactive-grid {
@@ -1160,21 +1288,34 @@
     }
 
     @keyframes feedback-scale {
-      from { transform: scale(0.5); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
+      from {
+        transform: scale(0.5);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
     }
 
     .feedback-correct {
       background: rgba(16, 185, 129, 0.08);
       border-color: rgba(16, 185, 129, 0.25);
     }
-    .feedback-correct .feedback-icon { color: var(--color-success); }
+
+    .feedback-correct .feedback-icon {
+      color: var(--color-success);
+    }
 
     .feedback-incorrect {
       background: rgba(239, 68, 68, 0.08);
       border-color: rgba(239, 68, 68, 0.25);
     }
-    .feedback-incorrect .feedback-icon { color: var(--color-danger); }
+
+    .feedback-incorrect .feedback-icon {
+      color: var(--color-danger);
+    }
 
     .feedback-score {
       font-size: 2.2rem;
@@ -1291,29 +1432,39 @@
       font-size: 1.8rem;
       font-weight: 800;
       color: rgba(255, 255, 255, 0.9);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
 
-    .place-1 { height: 200px; }
+    .place-1 {
+      height: 200px;
+    }
+
     .place-1 .podium-bar {
       background: linear-gradient(to top, #d97706, #f59e0b);
       height: 160px;
       border: 1px solid rgba(245, 158, 11, 0.4);
     }
+
     .place-1 .podium-avatar {
       font-size: 1.4rem;
       font-weight: 800;
       color: #fbbf24;
     }
 
-    .place-2 { height: 160px; }
+    .place-2 {
+      height: 160px;
+    }
+
     .place-2 .podium-bar {
       background: linear-gradient(to top, #4b5563, #9ca3af);
       height: 120px;
       border: 1px solid rgba(156, 163, 175, 0.4);
     }
 
-    .place-3 { height: 130px; }
+    .place-3 {
+      height: 130px;
+    }
+
     .place-3 .podium-bar {
       background: linear-gradient(to top, #78350f, #b45309);
       height: 90px;
@@ -1338,8 +1489,13 @@
     }
 
     @keyframes float {
-      from { transform: translateY(0); }
-      to { transform: translateY(-10px); }
+      from {
+        transform: translateY(0);
+      }
+
+      to {
+        transform: translateY(-10px);
+      }
     }
 
     /* ----------------------------------
@@ -1362,7 +1518,7 @@
       border-radius: 12px;
       color: white;
       backdrop-filter: blur(12px);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
       display: flex;
       align-items: center;
       gap: 0.8rem;
@@ -1370,13 +1526,28 @@
       animation: slide-in 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
     }
 
-    .toast-success { border-left: 4px solid var(--color-success); }
-    .toast-error { border-left: 4px solid var(--color-danger); }
-    .toast-info { border-left: 4px solid var(--color-accent); }
+    .toast-success {
+      border-left: 4px solid var(--color-success);
+    }
+
+    .toast-error {
+      border-left: 4px solid var(--color-danger);
+    }
+
+    .toast-info {
+      border-left: 4px solid var(--color-accent);
+    }
 
     @keyframes slide-in {
-      from { transform: translateX(120%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
+      from {
+        transform: translateX(120%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
     }
 
     .toast.fade-out {
@@ -1384,11 +1555,19 @@
     }
 
     @keyframes slide-out {
-      from { transform: translateX(0); opacity: 1; }
-      to { transform: translateX(120%); opacity: 0; }
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+
+      to {
+        transform: translateX(120%);
+        opacity: 0;
+      }
     }
   </style>
 </head>
+
 <body>
 
   <!-- Background Gradients and Matrix grid -->
@@ -1407,9 +1586,10 @@
     <div class="splash-bg-scatter"></div>
     <div class="puzzle-container" id="splash-puzzle">
       <!-- Piece Q -->
-      <div class="puzzle-piece" style="--index: 0; --color: #ff007f; --x-dir: -80vw; --y-dir: -80vh; --rotate: -180deg;">
+      <div class="puzzle-piece"
+        style="--index: 0; --color: #ff007f; --x-dir: -80vw; --y-dir: -80vh; --rotate: -180deg;">
         <svg viewBox="-20 -10 140 120">
-          <path d="M 0,0 L 100,0 C 100,30 115,35 115,50 C 115,65 100,70 100,100 L 0,100 Z" fill="url(#grad-q)"/>
+          <path d="M 0,0 L 100,0 C 100,30 115,35 115,50 C 115,65 100,70 100,100 L 0,100 Z" fill="url(#grad-q)" />
           <text x="50" y="65" font-weight="900" font-size="46" fill="#ffffff" text-anchor="middle">Q</text>
           <defs>
             <linearGradient id="grad-q" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -1422,7 +1602,9 @@
       <!-- Piece U -->
       <div class="puzzle-piece" style="--index: 1; --color: #00f0ff; --x-dir: 0px; --y-dir: 90vh; --rotate: 90deg;">
         <svg viewBox="-20 -10 140 120">
-          <path d="M 0,0 L 100,0 C 100,30 85,35 85,50 C 85,65 100,70 100,100 L 0,100 C 0,70 15,65 15,50 C 15,35 0,30 0,0 Z" fill="url(#grad-u)"/>
+          <path
+            d="M 0,0 L 100,0 C 100,30 85,35 85,50 C 85,65 100,70 100,100 L 0,100 C 0,70 15,65 15,50 C 15,35 0,30 0,0 Z"
+            fill="url(#grad-u)" />
           <text x="50" y="65" font-weight="900" font-size="46" fill="#ffffff" text-anchor="middle">U</text>
           <defs>
             <linearGradient id="grad-u" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -1435,7 +1617,9 @@
       <!-- Piece I -->
       <div class="puzzle-piece" style="--index: 2; --color: #ffeb3b; --x-dir: 0px; --y-dir: -90vh; --rotate: -90deg;">
         <svg viewBox="-20 -10 140 120">
-          <path d="M 0,0 L 100,0 C 100,30 115,35 115,50 C 115,65 100,70 100,100 L 0,100 C 0,70 -15,65 -15,50 C -15,35 0,30 0,0 Z" fill="url(#grad-i)"/>
+          <path
+            d="M 0,0 L 100,0 C 100,30 115,35 115,50 C 115,65 100,70 100,100 L 0,100 C 0,70 -15,65 -15,50 C -15,35 0,30 0,0 Z"
+            fill="url(#grad-i)" />
           <text x="50" y="65" font-weight="900" font-size="46" fill="#ffffff" text-anchor="middle">I</text>
           <defs>
             <linearGradient id="grad-i" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -1448,7 +1632,9 @@
       <!-- Piece Z1 -->
       <div class="puzzle-piece" style="--index: 3; --color: #00ff87; --x-dir: -80vw; --y-dir: 80vh; --rotate: 120deg;">
         <svg viewBox="-20 -10 140 120">
-          <path d="M 0,0 L 100,0 C 100,30 85,35 85,50 C 85,65 100,70 100,100 L 0,100 C 0,70 15,65 15,50 C 15,35 0,30 0,0 Z" fill="url(#grad-z1)"/>
+          <path
+            d="M 0,0 L 100,0 C 100,30 85,35 85,50 C 85,65 100,70 100,100 L 0,100 C 0,70 15,65 15,50 C 15,35 0,30 0,0 Z"
+            fill="url(#grad-z1)" />
           <text x="50" y="65" font-weight="900" font-size="46" fill="#ffffff" text-anchor="middle">Z</text>
           <defs>
             <linearGradient id="grad-z1" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -1461,7 +1647,9 @@
       <!-- Piece Z2 -->
       <div class="puzzle-piece" style="--index: 4; --color: #ff5722; --x-dir: 80vw; --y-dir: -80vh; --rotate: -120deg;">
         <svg viewBox="-20 -10 140 120">
-          <path d="M 0,0 L 100,0 C 100,30 115,35 115,50 C 115,65 100,70 100,100 L 0,100 C 0,70 -15,65 -15,50 C -15,35 0,30 0,0 Z" fill="url(#grad-z2)"/>
+          <path
+            d="M 0,0 L 100,0 C 100,30 115,35 115,50 C 115,65 100,70 100,100 L 0,100 C 0,70 -15,65 -15,50 C -15,35 0,30 0,0 Z"
+            fill="url(#grad-z2)" />
           <text x="50" y="65" font-weight="900" font-size="46" fill="#ffffff" text-anchor="middle">Z</text>
           <defs>
             <linearGradient id="grad-z2" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -1474,7 +1662,9 @@
       <!-- Piece L -->
       <div class="puzzle-piece" style="--index: 5; --color: #8a2be2; --x-dir: -80vw; --y-dir: 0px; --rotate: 270deg;">
         <svg viewBox="-20 -10 140 120">
-          <path d="M 0,0 L 100,0 C 100,30 85,35 85,50 C 85,65 100,70 100,100 L 0,100 C 0,70 15,65 15,50 C 15,35 0,30 0,0 Z" fill="url(#grad-l)"/>
+          <path
+            d="M 0,0 L 100,0 C 100,30 85,35 85,50 C 85,65 100,70 100,100 L 0,100 C 0,70 15,65 15,50 C 15,35 0,30 0,0 Z"
+            fill="url(#grad-l)" />
           <text x="50" y="65" font-weight="900" font-size="46" fill="#ffffff" text-anchor="middle">L</text>
           <defs>
             <linearGradient id="grad-l" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -1487,7 +1677,7 @@
       <!-- Piece E -->
       <div class="puzzle-piece" style="--index: 6; --color: #ff003c; --x-dir: 80vw; --y-dir: 0px; --rotate: -270deg;">
         <svg viewBox="-20 -10 140 120">
-          <path d="M 0,0 L 100,0 L 100,100 L 0,100 C 0,70 -15,65 -15,50 C -15,35 0,30 0,0 Z" fill="url(#grad-e)"/>
+          <path d="M 0,0 L 100,0 L 100,100 L 0,100 C 0,70 -15,65 -15,50 C -15,35 0,30 0,0 Z" fill="url(#grad-e)" />
           <text x="50" y="65" font-weight="900" font-size="46" fill="#ffffff" text-anchor="middle">E</text>
           <defs>
             <linearGradient id="grad-e" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -1503,7 +1693,7 @@
   </div>
 
   <div class="container">
-    
+
     <!-- ----------------------------------
          HOME SCREEN
          ---------------------------------- -->
@@ -1535,19 +1725,46 @@
       </div>
     </div>
 
+    <!-- Demo Player Name Modal -->
+    <div id="modal-demo-name" class="modal-backdrop hidden">
+      <div class="glass-card modal-card animate-fade-in">
+        <div style="font-size:2.5rem; margin-bottom: 0.5rem;">🎮</div>
+        <h2 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 0.4rem;">Try a Demo</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.4;">
+          Enter your name to play against 4 AI opponents in a live simulated game!
+        </p>
+        <form id="form-demo-start">
+          <div style="display:flex; gap:0.7rem; align-items:center; margin-bottom: 1.3rem;">
+            <div id="demo-avatar-preview" style="font-size: 2rem; width: 54px; height: 54px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.06); border:1px solid var(--border-panel); border-radius:14px; cursor:pointer; user-select:none; transition:transform 0.15s ease;" title="Click to change emoji">⭐</div>
+            <input type="text" id="input-demo-nickname" maxlength="12" placeholder="Your Name" required style="flex:1; font-size:1.05rem; padding: 0.85rem 1rem;">
+          </div>
+          <div style="display: flex; gap: 0.8rem;">
+            <button type="button" id="btn-demo-modal-cancel" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+            <button type="submit" id="btn-demo-modal-start" class="btn btn-primary" style="flex: 1.3;">
+              <i class="fa-solid fa-play"></i> Start Demo
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- ----------------------------------
          HOST SETUP SCREEN
          ---------------------------------- -->
     <div id="screen-host-setup" class="view hidden">
       <!-- Draft Restore Banner -->
-      <div id="draft-restore-banner" class="glass-card hidden" style="padding: 1rem 1.5rem; margin-bottom: 1.5rem; border: 1px dashed var(--color-accent); background: rgba(0, 240, 255, 0.05); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+      <div id="draft-restore-banner" class="glass-card hidden"
+        style="padding: 1rem 1.5rem; margin-bottom: 1.5rem; border: 1px dashed var(--color-accent); background: rgba(0, 240, 255, 0.05); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
         <div style="display:flex; align-items:center; gap:0.8rem;">
           <i class="fa-solid fa-floppy-disk" style="color: var(--color-accent); font-size: 1.3rem;"></i>
           <span id="draft-info-text">You have a saved quiz draft.</span>
         </div>
         <div style="display: flex; gap: 0.8rem; flex-shrink: 0;">
-          <button id="btn-draft-restore" class="btn" style="padding: 0.4rem 1rem; font-size: 0.9rem; border-radius: 8px; background: var(--color-accent); color: var(--bg-dark); box-shadow: 0 4px 12px rgba(0, 240, 255, 0.25);">Restore Previous Draft</button>
-          <button id="btn-draft-discard" class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.9rem; border-radius: 8px;">Discard Draft</button>
+          <button id="btn-draft-restore" class="btn"
+            style="padding: 0.4rem 1rem; font-size: 0.9rem; border-radius: 8px; background: var(--color-accent); color: var(--bg-dark); box-shadow: 0 4px 12px rgba(0, 240, 255, 0.25);">Restore
+            Previous Draft</button>
+          <button id="btn-draft-discard" class="btn btn-secondary"
+            style="padding: 0.4rem 1rem; font-size: 0.9rem; border-radius: 8px;">Discard Draft</button>
         </div>
       </div>
 
@@ -1562,15 +1779,18 @@
           </button>
         </div>
       </div>
-      
+
       <!-- Quiz Title and Default Timer config card -->
-      <div class="glass-card" style="padding: 1.5rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+      <div class="glass-card"
+        style="padding: 1.5rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
         <div>
-          <label for="input-setup-title" style="display:block; margin-bottom:0.5rem; font-weight:600;">Quiz Title</label>
+          <label for="input-setup-title" style="display:block; margin-bottom:0.5rem; font-weight:600;">Quiz
+            Title</label>
           <input type="text" id="input-setup-title" placeholder="Enter Quiz Title" value="My Awesome Quiz" required>
         </div>
         <div>
-          <label for="input-setup-timer" style="display:block; margin-bottom:0.5rem; font-weight:600;">Default Timer (seconds)</label>
+          <label for="input-setup-timer" style="display:block; margin-bottom:0.5rem; font-weight:600;">Default Timer
+            (seconds)</label>
           <input type="number" id="input-setup-timer" min="3" max="360" value="20" placeholder="e.g. 20" required>
         </div>
       </div>
@@ -1583,7 +1803,8 @@
           <span class="ai-gen-badge">Gemini</span>
         </div>
         <div class="ai-gen-row">
-          <input type="text" id="ai-topic-input" placeholder="Enter a topic — e.g. Space, World War II, Python, Cricket…" autocomplete="off">
+          <input type="text" id="ai-topic-input"
+            placeholder="Enter a topic — e.g. Space, World War II, Python, Cricket…" autocomplete="off">
           <button class="btn-ai-generate" id="btn-ai-generate">
             <i class="fa-solid fa-wand-magic-sparkles"></i> Generate
           </button>
@@ -1601,7 +1822,7 @@
       <div class="question-list-container" id="editor-questions-list">
         <!-- Renders question editors dynamically -->
       </div>
-      
+
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <button id="btn-setup-back" class="btn btn-secondary">
           <i class="fa-solid fa-arrow-left"></i> Back
@@ -1621,10 +1842,11 @@
         <div class="glass-card lobby-info-card">
           <div class="lobby-pin-label">Join Code (PIN)</div>
           <div class="lobby-pin-number" id="lobby-pin">000 000</div>
-          
+
           <div class="qr-container" id="lobby-qrcode"></div>
-          
-          <p id="lobby-join-url" style="color: var(--text-muted); font-size: 0.9rem; word-break: break-all; margin-bottom:1rem;"></p>
+
+          <p id="lobby-join-url"
+            style="color: var(--text-muted); font-size: 0.9rem; word-break: break-all; margin-bottom:1rem;"></p>
         </div>
 
         <div class="glass-card lobby-players-card">
@@ -1658,7 +1880,8 @@
           <button id="btn-host-pause" class="btn btn-secondary" style="padding: 0.6rem 1.2rem; border-radius: 12px;">
             <i class="fa-solid fa-pause"></i> Pause
           </button>
-          <button id="btn-host-end-quiz-question" class="btn btn-secondary btn-end-quiz" style="padding: 0.6rem 1.2rem; border-radius: 12px; background: rgba(239, 68, 68, 0.15); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.25);">
+          <button id="btn-host-end-quiz-question" class="btn btn-secondary btn-end-quiz"
+            style="padding: 0.6rem 1.2rem; border-radius: 12px; background: rgba(239, 68, 68, 0.15); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.25);">
             <i class="fa-solid fa-stop"></i> End Quiz
           </button>
           <div class="timer-container" id="host-timer">00</div>
@@ -1666,6 +1889,9 @@
       </div>
 
       <div class="host-question-text" id="host-quest-text">Loading question text...</div>
+
+      <!-- Demo user prompt banner -->
+      <div id="demo-user-banner" class="hidden" style="text-align: center; margin: -1.2rem 0 1.8rem; font-size: 1.05rem; font-weight: 700;"></div>
 
       <div class="host-answers-grid" id="host-answers-grid">
         <div class="glass-card host-answer-card option-a" data-index="0">
@@ -1712,7 +1938,8 @@
         </div>
       </div>
       <div style="text-align: center;">
-        <button id="btn-host-end-quiz-leaderboard" class="btn btn-secondary btn-end-quiz" style="padding: 0.6rem 1.2rem; border-radius: 12px; background: rgba(239, 68, 68, 0.15); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.25);">
+        <button id="btn-host-end-quiz-leaderboard" class="btn btn-secondary btn-end-quiz"
+          style="padding: 0.6rem 1.2rem; border-radius: 12px; background: rgba(239, 68, 68, 0.15); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.25);">
           <i class="fa-solid fa-stop"></i> End Quiz
         </button>
       </div>
@@ -1726,7 +1953,7 @@
         <i class="fa-solid fa-trophy trophy-shine"></i>
       </div>
       <h2 style="text-align:center; margin-bottom:1rem;">Final Standings</h2>
-      
+
       <div class="podium-container" id="host-podium">
         <!-- 2nd Place -->
         <div class="podium-place place-2">
@@ -1753,6 +1980,8 @@
           </div>
         </div>
       </div>
+
+      <div id="demo-podium-user-result" class="hidden" style="text-align:center; margin: 1.5rem 0 2rem; font-size: 1.25rem; font-weight: 800;"></div>
 
       <div style="text-align:center;">
         <button id="btn-host-finish-done" class="btn btn-primary">
@@ -1792,10 +2021,11 @@
     <div id="screen-player-lobby" class="view hidden">
       <div class="glass-card waiting-lobby-card">
         <h2 id="player-lobby-status">Joined Game!</h2>
-        <p style="color:var(--text-muted); margin-top:0.5rem;">Nickname: <strong id="player-lobby-name" style="color:var(--color-accent)">-</strong></p>
-        
+        <p style="color:var(--text-muted); margin-top:0.5rem;">Nickname: <strong id="player-lobby-name"
+            style="color:var(--color-accent)">-</strong></p>
+
         <div class="spinner"></div>
-        
+
         <p>Waiting for the host to start the quiz...</p>
         <button id="btn-player-leave-lobby" class="btn btn-secondary" style="margin-top:2rem;">
           <i class="fa-solid fa-door-open"></i> Leave Lobby
@@ -1811,10 +2041,12 @@
         <h3 id="player-quest-num" style="color:var(--text-muted)">Question 1</h3>
         <div class="timer-container" id="player-timer">00</div>
       </div>
-      
+
       <!-- Display actual question text to player -->
-      <div id="player-quest-text" style="font-size: 1.45rem; font-weight: 800; text-align: center; margin-bottom: 2rem; line-height: 1.4; text-shadow: 0 2px 4px rgba(0,0,0,0.4);">Question text here...</div>
-      
+      <div id="player-quest-text"
+        style="font-size: 1.45rem; font-weight: 800; text-align: center; margin-bottom: 2rem; line-height: 1.4; text-shadow: 0 2px 4px rgba(0,0,0,0.4);">
+        Question text here...</div>
+
       <!-- Unified layout option selectors containing actual text -->
       <div class="player-interactive-grid" id="player-interactive-grid">
         <button class="player-btn-option" data-index="0">
@@ -1845,13 +2077,15 @@
         <h2 id="player-feedback-title">Correct!</h2>
         <div class="feedback-score" id="player-feedback-score">+850</div>
         <div class="feedback-pts">Points Earned</div>
-        
+
         <!-- Element to show the correct option text to players who got it wrong -->
-        <div id="player-reveal-correct-box" style="margin-top: 1.5rem; padding: 1rem; border-radius: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid var(--color-success); display: none; text-align: center;">
-          <span style="color:var(--text-muted); font-size: 0.9rem; display:block; margin-bottom: 0.3rem;">Correct Answer was:</span>
+        <div id="player-reveal-correct-box"
+          style="margin-top: 1.5rem; padding: 1rem; border-radius: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid var(--color-success); display: none; text-align: center;">
+          <span style="color:var(--text-muted); font-size: 0.9rem; display:block; margin-bottom: 0.3rem;">Correct Answer
+            was:</span>
           <strong id="player-reveal-correct-text" style="font-size: 1.15rem; color: white;">Option text</strong>
         </div>
-        
+
         <p style="margin-top:2rem; color:var(--text-muted)" id="player-feedback-total">Total: 850 pts</p>
       </div>
     </div>
@@ -1864,7 +2098,7 @@
         <h2>Your Standing</h2>
         <p style="color:var(--text-muted); margin-top:0.3rem;">Get ready for the next question...</p>
       </div>
-      
+
       <div class="glass-card" style="padding:1.5rem; margin-bottom:1.5rem;">
         <div class="leaderboard-list" id="player-leaderboard-list">
           <!-- Renders nearby ranks and highlights user -->
@@ -1881,7 +2115,7 @@
         <h2>Game Over!</h2>
         <h3 id="player-final-placement" style="color:var(--color-accent); margin:1rem 0;">You finished in 4th place</h3>
         <p id="player-final-score" style="font-weight:700; font-size:1.2rem;">Score: 2,450 pts</p>
-        
+
         <button id="btn-player-finish-done" class="btn btn-primary" style="margin-top:2rem;">
           <i class="fa-solid fa-house"></i> Home Screen
         </button>
@@ -1978,21 +2212,21 @@
     ];
 
     // Participant emojis list
-    const participantEmojis = ['🦁','🐯','🦊','🐺','🦝','🐻','🐼','🦋','🦄','🐉','🦅','🦜','🐬','🦈','🦕','🤖','👾','🧙','🦸','🎮','🚀','⚡','🌟','🔥','🎯','💎','🎪','🎭'];
+    const participantEmojis = ['🦁', '🐯', '🦊', '🐺', '🦝', '🐻', '🐼', '🦋', '🦄', '🐉', '🦅', '🦜', '🐬', '🦈', '🦕', '🤖', '👾', '🧙', '🦸', '🎮', '🚀', '⚡', '🌟', '🔥', '🎯', '💎', '🎪', '🎭'];
 
     // Helper: Toast Notifications
     function showToast(message, type = "info") {
       const container = document.getElementById("toast-container");
       const toast = document.createElement("div");
       toast.className = `toast toast-${type}`;
-      
+
       let icon = '<i class="fa-solid fa-circle-info"></i>';
       if (type === 'success') icon = '<i class="fa-solid fa-circle-check"></i>';
       if (type === 'error') icon = '<i class="fa-solid fa-triangle-exclamation"></i>';
-      
+
       toast.innerHTML = `${icon} <span>${message}</span>`;
       container.appendChild(toast);
-      
+
       setTimeout(() => {
         toast.classList.add("fade-out");
         toast.addEventListener("animationend", () => toast.remove());
@@ -2026,11 +2260,11 @@
       // Start animation sequence
       setTimeout(() => {
         puzzle.classList.add("animating-in");
-        
+
         // Snap interlock after fly-in finishes
         setTimeout(() => {
           puzzle.classList.add("assembled");
-          
+
           // Flash overlay and sparkles
           flash.classList.add("active");
           const rect = puzzle.getBoundingClientRect();
@@ -2041,7 +2275,7 @@
           // Show Tagline
           setTimeout(() => {
             tagline.classList.add("visible");
-            
+
             // Reconnect verification or direct PIN routing
             setTimeout(() => {
               if (joinPin && joinPin.length === 6) {
@@ -2120,7 +2354,7 @@
           }
 
           const gameData = snapshot.val();
-          
+
           if (role === "host") {
             reconnectHost(gameData);
           } else {
@@ -2198,7 +2432,7 @@
       const titleInput = document.getElementById("input-setup-title");
       const timerSelect = document.getElementById("input-setup-timer");
       if (!titleInput || !timerSelect) return;
-      
+
       const draft = {
         version: "1.0",
         savedAt: Date.now(),
@@ -2224,7 +2458,7 @@
       const banner = document.getElementById("draft-restore-banner");
       const infoSpan = document.getElementById("draft-info-text");
       const draftData = localStorage.getItem("quizzle_draft");
-      
+
       if (draftData) {
         try {
           const draft = JSON.parse(draftData);
@@ -2328,7 +2562,7 @@
     function renderQuestionEditor() {
       const container = document.getElementById("editor-questions-list");
       container.innerHTML = "";
-      
+
       if (currentQuestions.length === 0) {
         container.innerHTML = `
           <div class="glass-card" style="padding: 2.5rem; text-align: center; color: var(--text-muted);">
@@ -2341,9 +2575,9 @@
       currentQuestions.forEach((q, qIndex) => {
         const card = document.createElement("div");
         card.className = "glass-card question-card-edit";
-        
+
         const isLastQuestion = (qIndex === currentQuestions.length - 1);
-        
+
         card.innerHTML = `
           <div class="question-card-header">
             <h4 style="font-weight:700;">Question ${qIndex + 1}</h4>
@@ -2385,7 +2619,7 @@
           </div>
           ` : ''}
         `;
-        
+
         container.appendChild(card);
       });
 
@@ -2484,8 +2718,8 @@
         await db.ref(`games/${gamePin}`).set(gameInitData);
         saveSession(gamePin, "Host", "host");
 
-        document.getElementById("lobby-pin").innerText = `${gamePin.slice(0,3)} ${gamePin.slice(3)}`;
-        
+        document.getElementById("lobby-pin").innerText = `${gamePin.slice(0, 3)} ${gamePin.slice(3)}`;
+
         const joinUrl = `${window.location.origin}${window.location.pathname}?join=${gamePin}&v=${Date.now()}`;
         document.getElementById("lobby-join-url").innerHTML = `Scan QR or visit:<br><strong>${joinUrl}</strong>`;
         const qrContainer = document.getElementById("lobby-qrcode");
@@ -2519,13 +2753,13 @@
       dbRefs.lobbyPlayers = db.ref(`games/${gamePin}/players`);
       lobbyPlayersListener = dbRefs.lobbyPlayers.on("value", (snapshot) => {
         const players = snapshot.val() || {};
-        
+
         // Anti-cheat verification
         validateAndCorrectScores(players);
 
         const playerGrid = document.getElementById("lobby-players-grid");
         playerGrid.innerHTML = "";
-        
+
         const playerList = Object.values(players);
         playerList.forEach(p => {
           const chip = document.createElement("div");
@@ -2581,12 +2815,12 @@
 
     function validateAndCorrectScores(players) {
       if (!players || role !== "host") return;
-      
+
       Object.keys(players).forEach(pKey => {
         const p = players[pKey];
         let expectedScore = 0;
         let tampered = false;
-        
+
         if (p.answers) {
           Object.keys(p.answers).forEach(qKey => {
             const qIdx = parseInt(qKey);
@@ -2595,16 +2829,16 @@
               tampered = true;
               return;
             }
-            
+
             const ans = p.answers[qKey];
             const q = currentQuestions[qIdx];
             if (!q) return;
-            
+
             if (ans.answer === q.correctAnswer) {
               const timeLimit = q.timeLimit || 20;
               const timeTaken = Math.max(0, Math.min(timeLimit, ans.timeTaken || 0));
               const calculatedPoints = Math.round(500 + 500 * Math.max(0, 1 - (timeTaken / timeLimit)));
-              
+
               if (ans.points !== calculatedPoints) {
                 tampered = true;
               }
@@ -2616,7 +2850,7 @@
             }
           });
         }
-        
+
         if (p.score !== expectedScore || tampered) {
           console.warn(`Anti-Cheat: Corrected score for ${p.name}. Found: ${p.score}, Expected: ${expectedScore}`);
           db.ref(`games/${gamePin}/players/${pKey}`).update({
@@ -2650,10 +2884,10 @@
       }
 
       const q = currentQuestions[qIdx];
-      
+
       // Delete previous responses node completely to reset user answer active states
       await db.ref(`games/${gamePin}/activeQuestionAnswers`).remove();
-      
+
       await db.ref(`games/${gamePin}`).update({
         status: "question",
         currentQuestionIndex: qIdx,
@@ -2679,14 +2913,14 @@
       const q = currentQuestions[qIdx];
       document.getElementById("host-quest-num").innerText = `Question ${qIdx + 1} of ${currentQuestions.length}`;
       document.getElementById("host-quest-text").innerText = q.question;
-      
+
       for (let i = 0; i < 4; i++) {
         const card = document.querySelector(`.host-answer-card[data-index="${i}"]`);
         card.className = `glass-card host-answer-card option-${getOptionLetter(i)}`;
         document.getElementById(`text-${i}`).innerText = q.options[i];
         document.getElementById(`count-${i}`).innerText = "0";
         document.getElementById(`fill-${i}`).style.width = "0%";
-        
+
         // Remove correct answer reveal checkmark icon from previous round
         const existingIcon = card.querySelector(".host-reveal-icon");
         if (existingIcon) existingIcon.remove();
@@ -2750,7 +2984,7 @@
         const nowServer = Date.now() + serverTimeOffset;
         const elapsed = (nowServer - localTimerState.timerStart) / 1000;
         const remaining = Math.max(0, q.timeLimit - elapsed);
-        
+
         if (localTimerState.paused) {
           // Resume: adjust start time so remaining time starts from pausedRemaining
           const newStart = nowServer - (q.timeLimit - localTimerState.pausedRemaining) * 1000;
@@ -2776,7 +3010,7 @@
           const elapsed = (nowServer - localTimerState.timerStart) / 1000;
           remaining = Math.max(0, q.timeLimit - elapsed);
         }
-        
+
         timerEl.innerText = Math.ceil(remaining).toString().padStart(2, "0");
         if (remaining <= 5) {
           timerEl.classList.add("timer-danger");
@@ -2822,7 +3056,7 @@
 
         for (let i = 0; i < 4; i++) {
           const card = document.querySelector(`.host-answer-card[data-index="${i}"]`);
-          
+
           const matchingAnswers = Object.values(answers).filter(a => a === i).length;
           document.getElementById(`count-${i}`).innerText = matchingAnswers;
           const percentage = answeredCount > 0 ? (matchingAnswers / answeredCount) * 100 : 0;
@@ -2844,7 +3078,7 @@
       });
 
       document.getElementById("btn-host-skip").innerHTML = `<i class="fa-solid fa-chart-simple"></i> Leaderboard`;
-      
+
       let revealTimeout = setTimeout(() => {
         transitionToLeaderboard(qIdx);
       }, 5000);
@@ -2982,7 +3216,7 @@
 
           const rankEl = document.getElementById(`rank-val-${player.key}`);
           if (rankEl) {
-            const finalRank = newIdx !== -1 ? newIdx + 1 : playerList.sort((a,b) => b.score - a.score).findIndex(p => p.key === player.key) + 1;
+            const finalRank = newIdx !== -1 ? newIdx + 1 : playerList.sort((a, b) => b.score - a.score).findIndex(p => p.key === player.key) + 1;
             rankEl.innerText = `#${finalRank}`;
           }
 
@@ -2997,7 +3231,7 @@
       db.ref(`games/${gamePin}/players`).once("value", (snapshot) => {
         const players = snapshot.val() || {};
         const listEl = document.getElementById("host-leaderboard-list");
-        
+
         renderAnimatedLeaderboard(listEl, players, true);
 
         setTimeout(() => {
@@ -3012,7 +3246,7 @@
 
       db.ref(`games/${gamePin}/players`).once("value", (snapshot) => {
         const players = snapshot.val() || {};
-        const sorted = Object.values(players).sort((a,b) => b.score - a.score);
+        const sorted = Object.values(players).sort((a, b) => b.score - a.score);
 
         document.getElementById("podium-1-name").innerText = sorted[0] ? `${sorted[0].emoji || '👤'} ${sorted[0].name}` : "-";
         document.getElementById("podium-2-name").innerText = sorted[1] ? `${sorted[1].emoji || '👤'} ${sorted[1].name}` : "-";
@@ -3095,10 +3329,10 @@
     // ----------------------------------
     document.getElementById("form-player-join").addEventListener("submit", async (e) => {
       e.preventDefault();
-      
+
       const pin = document.getElementById("input-pin").value.trim();
       const nick = document.getElementById("input-nickname").value.trim();
-      
+
       if (pin.length !== 6 || isNaN(pin)) {
         showToast("PIN must be a 6-digit number", "error");
         return;
@@ -3114,7 +3348,7 @@
       try {
         const gameRef = db.ref(`games/${pin}`);
         const snapshot = await gameRef.once("value");
-        
+
         if (!snapshot.exists()) {
           showToast("Game room not found. Double check PIN.", "error");
           document.getElementById("btn-player-join-submit").disabled = false;
@@ -3149,7 +3383,7 @@
             document.getElementById("btn-player-join-submit").disabled = false;
             return;
           }
-          
+
           playerEmoji = participantEmojis[Math.floor(Math.random() * participantEmojis.length)];
           const playerObj = {
             name: nick,
@@ -3170,7 +3404,7 @@
         showScreen("screen-player-lobby");
 
         bindPlayerGameRef();
-        
+
       } catch (err) {
         console.error(err);
         showToast("Error joining lobby. Try again.", "error");
@@ -3302,10 +3536,10 @@
 
       const qIdx = game.currentQuestionIndex;
       const q = currentQuestions[qIdx];
-      
+
       document.getElementById("player-quest-num").innerText = `Question ${qIdx + 1}`;
       document.getElementById("player-quest-text").innerText = q.question;
-      
+
       const buttons = document.querySelectorAll(".player-btn-option");
       const waitingMsg = document.getElementById("player-waiting-msg");
 
@@ -3316,7 +3550,7 @@
       if (answerSubmitted) {
         localHasAnswered = true;
         buttons.forEach(btn => btn.disabled = true);
-        
+
         // Retain selection visual highlight on reload
         const savedAnswerIdx = playerObj.answers[qIdx].answer;
         buttons.forEach((btn, index) => {
@@ -3334,9 +3568,9 @@
         buttons.forEach((btn, index) => {
           btn.disabled = false;
           btn.className = `player-btn-option`; // Unified same-color setup
-          
+
           btn.querySelector(".player-btn-text").innerText = q.options[index];
-          
+
           btn.onclick = () => {
             buttons.forEach((b, idx) => {
               if (idx === index) {
@@ -3364,9 +3598,9 @@
           const elapsed = (nowServer - game.questionTimerStart) / 1000;
           remaining = Math.max(0, q.timeLimit - elapsed);
         }
-        
+
         timerEl.innerText = Math.ceil(remaining).toString().padStart(2, "0");
-        
+
         if (remaining <= 5) {
           timerEl.classList.add("timer-danger");
         } else {
@@ -3391,7 +3625,7 @@
       localHasAnswered = true;
 
       clearInterval(playerTimerInterval);
-      
+
       const buttons = document.querySelectorAll(".player-btn-option");
       buttons.forEach(btn => btn.disabled = true);
       document.getElementById("player-waiting-msg").classList.remove("hidden");
@@ -3409,14 +3643,14 @@
       const elapsed = (nowServer - game.questionTimerStart) / 1000;
 
       const isCorrect = (optIdx === currentQuestions[qIdx].correctAnswer);
-      
+
       let pointsEarned = 0;
       if (isCorrect) {
         pointsEarned = Math.round(500 + 500 * Math.max(0, 1 - (elapsed / timeLimit)));
       }
 
       const playerRef = db.ref(`games/${gamePin}/players/${userKey}`);
-      
+
       await playerRef.transaction((player) => {
         if (player) {
           player.score = (player.score || 0) + pointsEarned;
@@ -3440,7 +3674,7 @@
       const qIdx = game.currentQuestionIndex;
       const q = currentQuestions[qIdx];
       const correctIdx = q.correctAnswer;
-      
+
       const userKey = stringToHexKey(nickname);
       const player = game.players[userKey] || { score: 0 };
       const answersObj = player.answers || {};
@@ -3463,7 +3697,7 @@
         score.innerText = `+${thisAnswer.points}`;
         icon.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
         revealBox.style.display = "none";
-        
+
         confetti({ particleCount: 30, spread: 45, origin: { y: 0.7 } });
       } else if (thisAnswer.answer === -1) {
         card.className = "glass-card feedback-card feedback-incorrect";
@@ -3492,12 +3726,12 @@
       clearInterval(playerTimerInterval);
 
       const players = game.players || {};
-      const sorted = Object.values(players).sort((a,b) => b.score - a.score);
+      const sorted = Object.values(players).sort((a, b) => b.score - a.score);
       const myIndex = sorted.findIndex(p => p.name === nickname);
-      
+
       const place = myIndex + 1;
       const score = sorted[myIndex] ? sorted[myIndex].score : 0;
-      
+
       document.getElementById("player-final-placement").innerText = `You finished in ${getOrdinal(place)} place`;
       document.getElementById("player-final-score").innerText = `Score: ${score} pts`;
 
@@ -3545,16 +3779,25 @@
     // ==========================================
     // DEMO MODE — FULLY OFFLINE SIMULATION
     // ==========================================
-    const DEMO_PLAYERS = [
-      { name: "Luna",   emoji: "🦋", score: 0, answers: {} },
-      { name: "Blaze",  emoji: "🔥", score: 0, answers: {} },
-      { name: "Comet",  emoji: "🚀", score: 0, answers: {} },
-      { name: "Neon",   emoji: "⚡", score: 0, answers: {} },
-      { name: "Pixel",  emoji: "👾", score: 0, answers: {} },
+    const DEMO_AI_OPPONENTS = [
+      { name: "Luna", emoji: "🦋" },
+      { name: "Blaze", emoji: "🔥" },
+      { name: "Comet", emoji: "🚀" },
+      { name: "Neon", emoji: "⚡" },
+      { name: "Pixel", emoji: "👾" },
+      { name: "Nova", emoji: "🌟" },
+      { name: "Shadow", emoji: "🐺" },
+      { name: "Echo", emoji: "🐬" }
     ];
 
+    let DEMO_PLAYERS = [];
     let demoMode = false;
-    let demoQIdx  = 0;
+    let demoUserName = "Player";
+    let demoUserEmoji = "⭐";
+    let demoUserAnswered = false;
+    let demoUserChoice = -1;
+    let demoQuestionStartMs = 0;
+    let demoQIdx = 0;
     let demoQuestions = [];
     let demoPrevScores = {};
     let demoAnswerTimeouts = [];
@@ -3565,23 +3808,81 @@
     let demoHostTimerInterval = null;
     let demoTimerRemaining = 0;
 
-    function demoResetPlayers() {
-      DEMO_PLAYERS.forEach(p => {
-        p.score = 0;
-        p.answers = {};
-      });
+    const DEMO_AVATAR_EMOJIS = ['⭐', '🦁', '🦊', '🚀', '⚡', '🎮', '🦄', '🐉', '🤖', '🔥', '💎', '🎯'];
+    let demoAvatarIndex = 0;
+
+    function openDemoNameModal() {
+      const modal = document.getElementById("modal-demo-name");
+      const input = document.getElementById("input-demo-nickname");
+      const preview = document.getElementById("demo-avatar-preview");
+
+      const savedName = localStorage.getItem("quizzle_demo_name") || "Sheshanth";
+      input.value = savedName;
+      preview.innerText = demoUserEmoji;
+
+      modal.classList.remove("hidden");
+      setTimeout(() => {
+        input.focus();
+        input.select();
+      }, 50);
     }
 
-    function startDemo() {
+    function closeDemoNameModal() {
+      const modal = document.getElementById("modal-demo-name");
+      modal.classList.add("hidden");
+    }
+
+    // Avatar emoji cycle
+    document.getElementById("demo-avatar-preview").addEventListener("click", () => {
+      demoAvatarIndex = (demoAvatarIndex + 1) % DEMO_AVATAR_EMOJIS.length;
+      demoUserEmoji = DEMO_AVATAR_EMOJIS[demoAvatarIndex];
+      const preview = document.getElementById("demo-avatar-preview");
+      preview.innerText = demoUserEmoji;
+      preview.style.transform = "scale(1.2)";
+      setTimeout(() => { preview.style.transform = "scale(1)"; }, 150);
+    });
+
+    document.getElementById("btn-demo-modal-cancel").addEventListener("click", closeDemoNameModal);
+
+    document.getElementById("modal-demo-name").addEventListener("click", (e) => {
+      if (e.target.id === "modal-demo-name") {
+        closeDemoNameModal();
+      }
+    });
+
+    document.getElementById("form-demo-start").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const entered = document.getElementById("input-demo-nickname").value.trim();
+      if (!entered) return;
+      demoUserName = entered;
+      localStorage.setItem("quizzle_demo_name", demoUserName);
+      closeDemoNameModal();
+      stopDemo();
+      startDemo(demoUserName, demoUserEmoji);
+    });
+
+    function startDemo(userName, userEmoji) {
       demoMode = true;
-      demoResetPlayers();
+      demoUserName = userName || "Player";
+      demoUserEmoji = userEmoji || "⭐";
       demoQIdx = 0;
       demoQuestions = JSON.parse(JSON.stringify(sampleQuestions));
 
+      // Filter AI opponents so none shares the same name as the user
+      const filteredAIs = DEMO_AI_OPPONENTS.filter(
+        ai => ai.name.toLowerCase() !== demoUserName.toLowerCase()
+      );
+      const chosenAIs = filteredAIs.slice(0, 4);
+
+      // Total 5 players: 1 human player + 4 AI opponents
+      DEMO_PLAYERS = [
+        { name: demoUserName, emoji: demoUserEmoji, score: 0, answers: {}, isHuman: true },
+        ...chosenAIs.map(ai => ({ name: ai.name, emoji: ai.emoji, score: 0, answers: {}, isHuman: false }))
+      ];
+
       // Show demo banner
       document.getElementById("demo-mode-banner").classList.add("visible");
-
-      showToast("🎮 Demo Mode — Sample quiz with 5 AI players!", "info");
+      showToast(`🎮 Demo started as ${demoUserEmoji} ${demoUserName} vs 4 AI opponents!`, "info");
       demoLaunchQuestion(0);
     }
 
@@ -3593,6 +3894,25 @@
       demoAnswerTimeouts.forEach(clearTimeout);
       demoAnswerTimeouts = [];
       document.getElementById("demo-mode-banner").classList.remove("visible");
+
+      const userBanner = document.getElementById("demo-user-banner");
+      if (userBanner) {
+        userBanner.classList.add("hidden");
+        userBanner.innerHTML = "";
+      }
+      const podiumRes = document.getElementById("demo-podium-user-result");
+      if (podiumRes) {
+        podiumRes.classList.add("hidden");
+        podiumRes.innerHTML = "";
+      }
+
+      for (let i = 0; i < 4; i++) {
+        const card = document.querySelector(`.host-answer-card[data-index="${i}"]`);
+        if (card) {
+          card.classList.remove("interactive", "locked", "user-selected");
+          card.onclick = null;
+        }
+      }
     }
 
     // ---- DEMO: Question Phase ----
@@ -3605,17 +3925,30 @@
       demoAnswerTimeouts = [];
       demoAnswerCounts = [0, 0, 0, 0];
       demoAnswerTotal = 0;
+      demoUserAnswered = false;
+      demoUserChoice = -1;
+      demoQuestionStartMs = Date.now();
 
       // Header
       document.getElementById("host-quest-num").innerText = `Question ${qIdx + 1} of ${demoQuestions.length}`;
       document.getElementById("host-quest-text").innerText = q.question;
 
+      // User prompt banner
+      const userBanner = document.getElementById("demo-user-banner");
+      userBanner.classList.remove("hidden");
+      userBanner.innerHTML = `👉 <span style="color:var(--text-main);">Click your answer below to play as</span> <span style="color:var(--color-accent);">${demoUserEmoji} ${escapeHtml(demoUserName)}</span>!`;
+
       // Reset answer cards
       for (let i = 0; i < 4; i++) {
         const card = document.querySelector(`.host-answer-card[data-index="${i}"]`);
-        card.className = `glass-card host-answer-card option-${getOptionLetter(i)}`;
+        card.className = `glass-card host-answer-card option-${getOptionLetter(i)} interactive`;
         document.getElementById(`text-${i}`).innerText = q.options[i];
         document.getElementById(`count-${i}`).innerText = "0";
+
+        const oldPill = card.querySelector(".demo-user-pill");
+        if (oldPill) oldPill.remove();
+        const existingIcon = card.querySelector(".host-reveal-icon");
+        if (existingIcon) existingIcon.remove();
 
         // Show fill bar and count during demo for live response feel
         const fill = document.getElementById(`fill-${i}`);
@@ -3629,8 +3962,12 @@
         fill.style.zIndex = "1";
 
         document.getElementById(`count-${i}`).style.display = "inline";
-        const existingIcon = card.querySelector(".host-reveal-icon");
-        if (existingIcon) existingIcon.remove();
+
+        // Click to submit user answer
+        card.onclick = () => {
+          if (demoUserAnswered) return;
+          demoSubmitUserAnswer(i, qIdx);
+        };
       }
 
       document.getElementById("host-answers-grid").classList.remove("reveal-active");
@@ -3639,12 +3976,10 @@
       // Reveal Answer button
       document.getElementById("btn-host-skip").innerHTML = `<i class="fa-solid fa-eye"></i> Reveal Answer`;
       document.getElementById("btn-host-skip").onclick = () => {
-        // Cancel pending bot answers
         demoAnswerTimeouts.forEach(clearTimeout);
         demoAnswerTimeouts = [];
         clearInterval(demoHostTimerInterval);
-        // Any players who haven't answered yet: skip them
-        DEMO_PLAYERS.forEach((p, pi) => {
+        DEMO_PLAYERS.forEach(p => {
           if (p.answers[demoQIdx] === undefined) {
             p.answers[demoQIdx] = { answer: -1, points: 0 };
           }
@@ -3652,10 +3987,10 @@
         demoRevealAnswer(demoQIdx);
       };
 
-      // Pause button (no-op in demo, just aesthetic)
+      // Pause button
       document.getElementById("btn-host-pause").innerHTML = `<i class="fa-solid fa-pause"></i> Pause`;
       document.getElementById("btn-host-pause").className = "btn btn-secondary";
-      document.getElementById("btn-host-pause").onclick = () => {};
+      document.getElementById("btn-host-pause").onclick = () => { };
 
       // Timer
       const timerEl = document.getElementById("host-timer");
@@ -3663,9 +3998,8 @@
       demoTimerRemaining = q.timeLimit;
       timerEl.innerText = String(q.timeLimit).padStart(2, "0");
 
-      const startMs = Date.now();
       demoHostTimerInterval = setInterval(() => {
-        const elapsed = (Date.now() - startMs) / 1000;
+        const elapsed = (Date.now() - demoQuestionStartMs) / 1000;
         const rem = Math.max(0, q.timeLimit - elapsed);
         demoTimerRemaining = rem;
         timerEl.innerText = Math.ceil(rem).toString().padStart(2, "0");
@@ -3673,7 +4007,6 @@
         else timerEl.classList.remove("timer-danger");
         if (rem <= 0) {
           clearInterval(demoHostTimerInterval);
-          // Auto-reveal when time expires
           demoAnswerTimeouts.forEach(clearTimeout);
           demoAnswerTimeouts = [];
           DEMO_PLAYERS.forEach(p => {
@@ -3685,14 +4018,13 @@
         }
       }, 100);
 
-      // Schedule fake bot answers with random 2–8s delays
-      DEMO_PLAYERS.forEach((player, pi) => {
+      // Schedule fake bot answers ONLY for AI players (p.isHuman === false)
+      DEMO_PLAYERS.filter(p => !p.isHuman).forEach(player => {
         const delay = 2000 + Math.random() * 6000; // 2–8 seconds
         const t = setTimeout(() => {
           if (!demoMode) return;
           if (player.answers[demoQIdx] !== undefined) return;
 
-          // Bot picks: 65% chance correct, else random wrong option
           const q = demoQuestions[demoQIdx];
           let chosenIdx;
           if (Math.random() < 0.65) {
@@ -3712,19 +4044,68 @@
           player.answers[demoQIdx] = { answer: chosenIdx, points: pts, timeTaken };
           player.score += pts;
 
-          // Update live bar
           demoAnswerCounts[chosenIdx]++;
           demoAnswerTotal++;
           demoUpdateResponseBars(demoAnswerTotal, demoAnswerCounts, DEMO_PLAYERS.length);
 
-          // Auto-reveal when everyone answered
           if (demoAnswerTotal >= DEMO_PLAYERS.length) {
             clearInterval(demoHostTimerInterval);
-            demoRevealAnswer(demoQIdx);
+            setTimeout(() => {
+              if (demoMode) demoRevealAnswer(demoQIdx);
+            }, 600);
           }
         }, delay);
         demoAnswerTimeouts.push(t);
       });
+    }
+
+    function demoSubmitUserAnswer(optIdx, qIdx) {
+      if (demoUserAnswered) return;
+      demoUserAnswered = true;
+      demoUserChoice = optIdx;
+
+      const q = demoQuestions[qIdx];
+      const timeTaken = (Date.now() - demoQuestionStartMs) / 1000;
+      const isCorrect = (optIdx === q.correctAnswer);
+      let pts = 0;
+      if (isCorrect) {
+        pts = Math.round(500 + 500 * Math.max(0, 1 - (timeTaken / q.timeLimit)));
+      }
+
+      const human = DEMO_PLAYERS.find(p => p.isHuman);
+      if (human) {
+        human.answers[qIdx] = { answer: optIdx, points: pts, timeTaken };
+        human.score += pts;
+      }
+
+      // Lock cards and highlight selection
+      for (let i = 0; i < 4; i++) {
+        const card = document.querySelector(`.host-answer-card[data-index="${i}"]`);
+        card.classList.remove("interactive");
+        card.classList.add("locked");
+        if (i === optIdx) {
+          card.classList.add("user-selected");
+          const pill = document.createElement("span");
+          pill.className = "demo-user-pill";
+          pill.innerHTML = `<i class="fa-solid fa-user-check"></i> Your Pick`;
+          card.appendChild(pill);
+        }
+      }
+
+      // Update banner
+      const userBanner = document.getElementById("demo-user-banner");
+      userBanner.innerHTML = `<span style="color:var(--color-accent);"><i class="fa-solid fa-check"></i> Answer selected (${escapeHtml(q.options[optIdx])})! Waiting for AI opponents...</span>`;
+
+      demoAnswerCounts[optIdx]++;
+      demoAnswerTotal++;
+      demoUpdateResponseBars(demoAnswerTotal, demoAnswerCounts, DEMO_PLAYERS.length);
+
+      if (demoAnswerTotal >= DEMO_PLAYERS.length) {
+        clearInterval(demoHostTimerInterval);
+        setTimeout(() => {
+          if (demoMode) demoRevealAnswer(demoQIdx);
+        }, 600);
+      }
     }
 
     function demoUpdateResponseBars(answered, counts, total) {
@@ -3745,6 +4126,31 @@
       showScreen("screen-host-question");
       const q = demoQuestions[qIdx];
       const correctIdx = q.correctAnswer;
+
+      // Lock all cards and remove onclick
+      for (let i = 0; i < 4; i++) {
+        const card = document.querySelector(`.host-answer-card[data-index="${i}"]`);
+        card.classList.remove("interactive");
+        card.classList.add("locked");
+        card.onclick = null;
+      }
+
+      // If human didn't answer before time expired
+      const human = DEMO_PLAYERS.find(p => p.isHuman);
+      if (human && human.answers[qIdx] === undefined) {
+        human.answers[qIdx] = { answer: -1, points: 0 };
+      }
+
+      // Update user prompt banner with outcome
+      const userBanner = document.getElementById("demo-user-banner");
+      const ans = human ? human.answers[qIdx] : null;
+      if (ans && ans.answer === correctIdx) {
+        userBanner.innerHTML = `<span style="color:var(--color-success); font-size:1.15rem;"><i class="fa-solid fa-circle-check"></i> <strong>Correct!</strong> You earned +${ans.points} pts!</span>`;
+      } else if (ans && ans.answer >= 0) {
+        userBanner.innerHTML = `<span style="color:var(--color-danger); font-size:1.15rem;"><i class="fa-solid fa-circle-xmark"></i> <strong>Incorrect!</strong> Correct answer: Option ${getOptionLetter(correctIdx).toUpperCase()} (${escapeHtml(q.options[correctIdx])})</span>`;
+      } else {
+        userBanner.innerHTML = `<span style="color:var(--color-warning); font-size:1.15rem;"><i class="fa-solid fa-clock"></i> <strong>Time's up!</strong> You didn't submit an answer in time (+0 pts)</span>`;
+      }
 
       // Show final bar counts
       const finalCounts = [0, 0, 0, 0];
@@ -3789,41 +4195,39 @@
       clearTimeout(demoRevealTimeout);
       showScreen("screen-host-leaderboard");
 
-      // Build players object in the same format as real leaderboard renderer
+      // Ensure global nickname is set to the user's demo name for isMe matching
+      nickname = demoUserName;
+
       const playersObj = {};
+      const savedPrev = { ...previousScores };
+
       DEMO_PLAYERS.forEach((p, i) => {
-        playersObj[`demo_${i}`] = {
+        // Human player gets hex key of their name for isMe matching
+        const pKey = p.isHuman ? stringToHexKey(p.name) : `ai_${stringToHexKey(p.name)}`;
+        playersObj[pKey] = {
           name: p.name,
           emoji: p.emoji,
           score: p.score,
-          key: `demo_${i}`
+          key: pKey
         };
+        const pts = p.answers[qIdx] ? p.answers[qIdx].points : 0;
+        previousScores[pKey] = p.score - pts;
       });
 
       const listEl = document.getElementById("host-leaderboard-list");
+      // Pass isHost = false so the human player gets highlighted with "(You)"
+      renderAnimatedLeaderboard(listEl, playersObj, false);
 
-      // Temporarily override previousScores for animation
-      const savedPrev = { ...previousScores };
-      DEMO_PLAYERS.forEach((p, i) => {
-        const pts = p.answers[qIdx] ? p.answers[qIdx].points : 0;
-        previousScores[`demo_${i}`] = p.score - pts;
-      });
-
-      renderAnimatedLeaderboard(listEl, playersObj, true);
-
-      // Restore previousScores
+      // Restore previousScores snapshot
       Object.assign(previousScores, savedPrev);
 
       const nextQIdx = qIdx + 1;
       const isLast = nextQIdx >= demoQuestions.length;
 
       document.getElementById("leaderboard-sub").innerText = isLast
-        ? "Final question done — showing podium!"
+        ? "Final question completed! View final standings..."
         : `Next question starts shortly...`;
 
-      // "Next Question" button for the leaderboard "End Quiz" area — repurpose
-      // The leaderboard screen has a btn-host-end-quiz-leaderboard button;
-      // in demo mode we override it temporarily.
       const endBtn = document.getElementById("btn-host-end-quiz-leaderboard");
       const origText = endBtn.innerHTML;
       const origOnClick = endBtn.onclick;
@@ -3873,15 +4277,28 @@
       triggerConfetti();
 
       const sorted = [...DEMO_PLAYERS].sort((a, b) => b.score - a.score);
-      document.getElementById("podium-1-name").innerText = sorted[0] ? `${sorted[0].emoji} ${sorted[0].name}` : "-";
-      document.getElementById("podium-2-name").innerText = sorted[1] ? `${sorted[1].emoji} ${sorted[1].name}` : "-";
-      document.getElementById("podium-3-name").innerText = sorted[2] ? `${sorted[2].emoji} ${sorted[2].name}` : "-";
+      const formatPodium = (p) => {
+        if (!p) return "-";
+        return p.isHuman ? `${p.emoji} ${p.name} (You)` : `${p.emoji} ${p.name}`;
+      };
+
+      document.getElementById("podium-1-name").innerText = formatPodium(sorted[0]);
+      document.getElementById("podium-2-name").innerText = formatPodium(sorted[1]);
+      document.getElementById("podium-3-name").innerText = formatPodium(sorted[2]);
+
+      const human = DEMO_PLAYERS.find(p => p.isHuman);
+      const userRank = sorted.findIndex(p => p.isHuman) + 1;
+      const resEl = document.getElementById("demo-podium-user-result");
+      if (resEl && human) {
+        resEl.classList.remove("hidden");
+        const medal = userRank === 1 ? "🥇" : (userRank === 2 ? "🥈" : (userRank === 3 ? "🥉" : "🎖️"));
+        resEl.innerHTML = `${medal} You finished in <strong style="color:var(--color-accent);">${getOrdinal(userRank)} place</strong> with <strong>${human.score.toLocaleString()} pts</strong>!`;
+      }
     }
 
     // ---- Demo button click ----
     document.getElementById("btn-home-demo").addEventListener("click", () => {
-      stopDemo(); // clean up any prior demo
-      startDemo();
+      openDemoNameModal();
     });
 
     // ==========================================
@@ -4059,4 +4476,5 @@ Where correctAnswer is the 0-based index of the correct option.`;
     });
   </script>
 </body>
+
 </html>
