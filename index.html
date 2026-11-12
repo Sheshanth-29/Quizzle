@@ -23,8 +23,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
-  <!-- Runtime API Key for local development (gitignored — on Vercel, /api/generate uses environment variables) -->
-  <script src="config.js" onerror="/* config.js not needed in production (handled by Vercel serverless /api/generate) */"></script>
 
   <!-- QRCode.js (via CDN) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -510,6 +508,7 @@
         opacity: 0;
         transform: scale(0.95) translateY(12px);
       }
+
       to {
         opacity: 1;
         transform: scale(1) translateY(0);
@@ -1735,8 +1734,11 @@
         </p>
         <form id="form-demo-start">
           <div style="display:flex; gap:0.7rem; align-items:center; margin-bottom: 1.3rem;">
-            <div id="demo-avatar-preview" style="font-size: 2rem; width: 54px; height: 54px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.06); border:1px solid var(--border-panel); border-radius:14px; cursor:pointer; user-select:none; transition:transform 0.15s ease;" title="Click to change emoji">⭐</div>
-            <input type="text" id="input-demo-nickname" maxlength="12" placeholder="Your Name" required style="flex:1; font-size:1.05rem; padding: 0.85rem 1rem;">
+            <div id="demo-avatar-preview"
+              style="font-size: 2rem; width: 54px; height: 54px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.06); border:1px solid var(--border-panel); border-radius:14px; cursor:pointer; user-select:none; transition:transform 0.15s ease;"
+              title="Click to change emoji">⭐</div>
+            <input type="text" id="input-demo-nickname" maxlength="12" placeholder="Your Name" required
+              style="flex:1; font-size:1.05rem; padding: 0.85rem 1rem;">
           </div>
           <div style="display: flex; gap: 0.8rem;">
             <button type="button" id="btn-demo-modal-cancel" class="btn btn-secondary" style="flex: 1;">Cancel</button>
@@ -1891,7 +1893,8 @@
       <div class="host-question-text" id="host-quest-text">Loading question text...</div>
 
       <!-- Demo user prompt banner -->
-      <div id="demo-user-banner" class="hidden" style="text-align: center; margin: -1.2rem 0 1.8rem; font-size: 1.05rem; font-weight: 700;"></div>
+      <div id="demo-user-banner" class="hidden"
+        style="text-align: center; margin: -1.2rem 0 1.8rem; font-size: 1.05rem; font-weight: 700;"></div>
 
       <div class="host-answers-grid" id="host-answers-grid">
         <div class="glass-card host-answer-card option-a" data-index="0">
@@ -1981,7 +1984,8 @@
         </div>
       </div>
 
-      <div id="demo-podium-user-result" class="hidden" style="text-align:center; margin: 1.5rem 0 2rem; font-size: 1.25rem; font-weight: 800;"></div>
+      <div id="demo-podium-user-result" class="hidden"
+        style="text-align:center; margin: 1.5rem 0 2rem; font-size: 1.25rem; font-weight: 800;"></div>
 
       <div style="text-align:center;">
         <button id="btn-host-finish-done" class="btn btn-primary">
@@ -4324,92 +4328,19 @@
         : `<span style="color:${color}">${msg}</span>`;
     }
 
-    function normaliseAIQuestions(questions) {
-      const defaultTimer = parseInt(document.getElementById("input-setup-timer").value) || 20;
-      return questions.map(q => ({
-        question: String(q.question || "").trim(),
-        options: Array.isArray(q.options) ? q.options.map(o => String(o).trim()) : ["", "", "", ""],
-        correctAnswer: Number.isInteger(q.correctAnswer) ? q.correctAnswer : 0,
-        timeLimit: defaultTimer
-      })).filter(q => q.question && q.options.length === 4);
-    }
-
     async function generateQuestionsWithAI(topic, count) {
-      // 1. Try Vercel Serverless Function first (/api/generate)
-      try {
-        const resp = await fetch("/api/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ topic, count })
-        });
-
-        if (resp.ok) {
-          const data = await resp.json();
-          if (Array.isArray(data.questions) && data.questions.length > 0) {
-            return normaliseAIQuestions(data.questions);
-          }
-        } else if (resp.status !== 404) {
-          // If 400 or 500 from /api/generate, it's an explicit error from the serverless function
-          const errData = await resp.json().catch(() => ({}));
-          throw new Error(errData.error || `Server error: ${resp.status}`);
-        }
-      } catch (e) {
-        // If it was a real backend error (like missing env var or quota error), rethrow it
-        if (!e.message.includes("404") && !e.message.includes("Failed to fetch") && !e.message.includes("NetworkError")) {
-          throw e;
-        }
-        // If 404 or failed to fetch (e.g. running local python server without /api), proceed to local fallback below
-      }
-
-      // 2. Local Fallback: Direct Gemini API call if config.js provides a key
-      const apiKey = (window.GEMINI_API_KEY || "").trim();
-      if (!apiKey || apiKey === "YOUR_GEMINI_API_KEY_HERE") {
-        throw new Error("No API key found. If deployed on Vercel, ensure GEMINI_API_KEY is set in Project Settings > Environment Variables. If running locally, add your key to config.js.");
-      }
-
-      const prompt = `You are a quiz creator. Generate exactly ${count} multiple-choice quiz questions about the topic: "${topic}".
-
-Rules:
-- Each question must have exactly 4 answer options (A, B, C, D).
-- Exactly one option must be correct.
-- Questions should be clear, factual, and educational.
-- Vary difficulty: mix easy, medium, and hard questions.
-- Do NOT number the questions.
-
-Respond ONLY with a valid JSON array, no extra text, no markdown fences. Format:
-[
-  {
-    "question": "Question text here?",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correctAnswer": 0
-  }
-]
-
-Where correctAnswer is the 0-based index of the correct option.`;
-
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-      const response = await fetch(endpoint, {
+      // The Gemini key stays on the server (api/generate.js). The browser only sends topic + count.
+      const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2048,
-            responseMimeType: "application/json"
-          }
-        })
+        body: JSON.stringify({ topic, count })
       });
 
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        const errMsg = errData?.error?.message || `HTTP ${response.status}`;
-        throw new Error(`Gemini API error: ${errMsg}`);
+        throw new Error(data.error || `AI generation failed (HTTP ${response.status}).`);
       }
-
-      const data = await response.json();
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      const rawText = data.text || "";
 
       // Strip markdown code fences if present
       const cleaned = rawText.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
@@ -4431,7 +4362,14 @@ Where correctAnswer is the 0-based index of the correct option.`;
         throw new Error("No questions returned. Try a different topic.");
       }
 
-      return normaliseAIQuestions(questions);
+      // Validate and normalise each question
+      const defaultTimer = parseInt(document.getElementById("input-setup-timer").value) || 20;
+      return questions.map(q => ({
+        question: String(q.question || "").trim(),
+        options: Array.isArray(q.options) ? q.options.map(o => String(o).trim()) : ["", "", "", ""],
+        correctAnswer: Number.isInteger(q.correctAnswer) ? q.correctAnswer : 0,
+        timeLimit: defaultTimer
+      })).filter(q => q.question && q.options.length === 4);
     }
 
     document.getElementById("btn-ai-generate").addEventListener("click", async () => {
@@ -4491,6 +4429,9 @@ Where correctAnswer is the 0-based index of the correct option.`;
         document.getElementById("btn-ai-generate").click();
       }
     });
+
+    // Hide AI card if no API key is detected (graceful degradation)
+
   </script>
 </body>
 
