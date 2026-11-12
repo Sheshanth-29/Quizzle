@@ -23,8 +23,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
-  <!-- Runtime API Key (gitignored — see config.example.js) -->
-  <script src="config.js" onerror="console.warn('config.js not found — AI generation disabled.')"></script>
+  <!-- Runtime API Key for local development (gitignored — on Vercel, /api/generate uses environment variables) -->
+  <script src="config.js" onerror="/* config.js not needed in production (handled by Vercel serverless /api/generate) */"></script>
 
   <!-- QRCode.js (via CDN) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -4324,10 +4324,47 @@
         : `<span style="color:${color}">${msg}</span>`;
     }
 
+    function normaliseAIQuestions(questions) {
+      const defaultTimer = parseInt(document.getElementById("input-setup-timer").value) || 20;
+      return questions.map(q => ({
+        question: String(q.question || "").trim(),
+        options: Array.isArray(q.options) ? q.options.map(o => String(o).trim()) : ["", "", "", ""],
+        correctAnswer: Number.isInteger(q.correctAnswer) ? q.correctAnswer : 0,
+        timeLimit: defaultTimer
+      })).filter(q => q.question && q.options.length === 4);
+    }
+
     async function generateQuestionsWithAI(topic, count) {
+      // 1. Try Vercel Serverless Function first (/api/generate)
+      try {
+        const resp = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic, count })
+        });
+
+        if (resp.ok) {
+          const data = await resp.json();
+          if (Array.isArray(data.questions) && data.questions.length > 0) {
+            return normaliseAIQuestions(data.questions);
+          }
+        } else if (resp.status !== 404) {
+          // If 400 or 500 from /api/generate, it's an explicit error from the serverless function
+          const errData = await resp.json().catch(() => ({}));
+          throw new Error(errData.error || `Server error: ${resp.status}`);
+        }
+      } catch (e) {
+        // If it was a real backend error (like missing env var or quota error), rethrow it
+        if (!e.message.includes("404") && !e.message.includes("Failed to fetch") && !e.message.includes("NetworkError")) {
+          throw e;
+        }
+        // If 404 or failed to fetch (e.g. running local python server without /api), proceed to local fallback below
+      }
+
+      // 2. Local Fallback: Direct Gemini API call if config.js provides a key
       const apiKey = (window.GEMINI_API_KEY || "").trim();
       if (!apiKey || apiKey === "YOUR_GEMINI_API_KEY_HERE") {
-        throw new Error("No API key found. Add your Gemini API key to config.js (see config.example.js).");
+        throw new Error("No API key found. If deployed on Vercel, ensure GEMINI_API_KEY is set in Project Settings > Environment Variables. If running locally, add your key to config.js.");
       }
 
       const prompt = `You are a quiz creator. Generate exactly ${count} multiple-choice quiz questions about the topic: "${topic}".
@@ -4394,14 +4431,7 @@ Where correctAnswer is the 0-based index of the correct option.`;
         throw new Error("No questions returned. Try a different topic.");
       }
 
-      // Validate and normalise each question
-      const defaultTimer = parseInt(document.getElementById("input-setup-timer").value) || 20;
-      return questions.map(q => ({
-        question: String(q.question || "").trim(),
-        options: Array.isArray(q.options) ? q.options.map(o => String(o).trim()) : ["", "", "", ""],
-        correctAnswer: Number.isInteger(q.correctAnswer) ? q.correctAnswer : 0,
-        timeLimit: defaultTimer
-      })).filter(q => q.question && q.options.length === 4);
+      return normaliseAIQuestions(questions);
     }
 
     document.getElementById("btn-ai-generate").addEventListener("click", async () => {
@@ -4459,19 +4489,6 @@ Where correctAnswer is the 0-based index of the correct option.`;
       if (e.key === "Enter") {
         e.preventDefault();
         document.getElementById("btn-ai-generate").click();
-      }
-    });
-
-    // Hide AI card if no API key is detected (graceful degradation)
-    window.addEventListener("load", () => {
-      const key = window.GEMINI_API_KEY || "";
-      if (!key || key === "YOUR_GEMINI_API_KEY_HERE") {
-        const card = document.getElementById("ai-gen-card");
-        if (card) {
-          card.style.opacity = "0.5";
-          card.title = "Add your Gemini API key to config.js to enable AI generation.";
-          aiSetStatus("ℹ️ Add your Gemini API key in config.js to enable AI generation.");
-        }
       }
     });
   </script>
