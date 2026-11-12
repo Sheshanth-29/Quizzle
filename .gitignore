@@ -1,0 +1,22 @@
+# ───────────────────────────────────────────
+#  Quizzle — .gitignore
+# ───────────────────────────────────────────
+
+# Secret API keys and environment variables
+.env
+.env.*
+config.js
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Python server artifacts
+__pycache__/
+*.pyc
+
